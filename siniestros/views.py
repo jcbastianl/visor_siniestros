@@ -389,3 +389,29 @@ class VictimasPorEdadSexoView(APIView):
         ]
 
         return Response(data_formateada)
+
+
+class VictimasPorMesView(APIView):
+    """Aggregate victimas per month for a given year."""
+
+    def get(self, request, format=None):
+        try:
+            year = int(request.query_params.get('year', datetime.now().year))
+        except ValueError:
+            return Response({'error': "Parámetro 'year' debe ser un número."}, status=400)
+
+        queryset = (
+            Victima.objects
+            .filter(siniestro__fecha_hora__year=year)
+            .annotate(mes=TruncMonth('siniestro__fecha_hora'))
+            .values('mes')
+            .annotate(total=Count('id'))
+            .order_by('mes')
+        )
+
+        monthly_totals = {month: 0 for month in range(1, 13)}
+        for item in queryset:
+            monthly_totals[item['mes'].month] = item['total']
+
+        data = [{'mes': month, 'total': monthly_totals[month]} for month in range(1, 13)]
+        return Response(data)
