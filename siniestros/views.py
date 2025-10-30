@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.db.models import Count
+from django.db.models import Count, Case, When, Value, CharField
 from django.db.models.functions import TruncMonth, ExtractHour, ExtractWeekDay
 
 from rest_framework import serializers, viewsets
@@ -329,3 +329,63 @@ class VictimasPorActorVialView(APIView):
         ]
 
         return Response(data)
+
+
+class VictimasPorEdadSexoView(APIView):
+    """Aggregate victimas per age range and sexo for a given year."""
+
+    def get(self, request, format=None):
+        try:
+            year = int(request.query_params.get('year', datetime.now().year))
+        except ValueError:
+            return Response({'error': "Parámetro 'year' debe ser un número."}, status=400)
+
+        sexos = [Victima.Sexo.HOMBRE, Victima.Sexo.MUJER]
+        rangos_edad = {
+            '0-9': (0, 9),
+            '10-19': (10, 19),
+            '20-29': (20, 29),
+            '30-39': (30, 39),
+            '40-49': (40, 49),
+            '50-59': (50, 59),
+            '60-69': (60, 69),
+            '70+': (70, 150),
+        }
+
+        data = {rango: {Victima.Sexo.HOMBRE: 0, Victima.Sexo.MUJER: 0} for rango in rangos_edad}
+
+        rango_edad_case = Case(
+            *[When(edad__range=rango, then=Value(nombre)) for nombre, rango in rangos_edad.items()],
+            default=Value('No Registra'),
+            output_field=CharField(),
+        )
+
+        queryset = (
+            Victima.objects
+            .filter(
+                siniestro__fecha_hora__year=year,
+                sexo__in=sexos,
+                edad__isnull=False,
+            )
+            .annotate(rango_edad=rango_edad_case)
+            .values('rango_edad', 'sexo')
+            .annotate(total=Count('id'))
+            .order_by('rango_edad', 'sexo')
+        )
+
+        for item in queryset:
+            rango = item['rango_edad']
+            sexo = item['sexo']
+            if rango in data and sexo in data[rango]:
+                data[rango][sexo] = item['total']
+
+        data_formateada = [
+            {
+                'rango': rango,
+                'hombre': totales[Victima.Sexo.HOMBRE],
+                'mujer': totales[Victima.Sexo.MUJER],
+            }
+            for rango, totales in data.items()
+        ]
+
+        return Response(data_formateada)
