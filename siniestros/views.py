@@ -447,3 +447,44 @@ class VictimasPorHoraView(APIView):
             for hour in range(24)
         ]
         return Response(data)
+
+
+class VictimasPorDiaHoraView(APIView):
+    """Aggregate victimas per weekday and hour for a given year."""
+
+    def get(self, request, format=None):
+        try:
+            year = int(request.query_params.get('year', datetime.now().year))
+        except ValueError:
+            return Response({'error': "Parámetro 'year' debe ser un número."}, status=400)
+
+        matrix = {day: {hour: 0 for hour in range(24)} for day in range(1, 8)}
+
+        queryset = (
+            Victima.objects
+            .filter(siniestro__fecha_hora__year=year)
+            .annotate(
+                dia_semana=ExtractWeekDay('siniestro__fecha_hora'),
+                hora_dia=ExtractHour('siniestro__fecha_hora'),
+            )
+            .values('dia_semana', 'hora_dia')
+            .annotate(total=Count('id'))
+        )
+
+        for item in queryset:
+            day = item['dia_semana']
+            hour = item['hora_dia']
+            if day in matrix and hour is not None:
+                matrix[day][hour] = item['total']
+
+        data = [
+            {
+                'dia_semana': day,
+                'hora_dia': hour,
+                'total': matrix[day][hour],
+            }
+            for day in range(1, 8)
+            for hour in range(24)
+        ]
+
+        return Response(data)
