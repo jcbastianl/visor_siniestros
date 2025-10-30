@@ -1,40 +1,56 @@
-# Este es el código para: siniestros/views.py
+from rest_framework import serializers
 
-from rest_framework import viewsets
-from .models import Siniestro, Causa, TipoSiniestro
-# ¡Importamos los serializers que acabamos de crear!
-from .serializers import SiniestroSerializer, CausaSerializer, TipoSiniestroSerializer
-
-# --- 1. Vista para los Siniestros (Para el Mapa y la lista) ---
-
-class SiniestroViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Este ViewSet provee automáticamente las acciones `list` (listar todos)
-    y `retrieve` (ver uno solo por ID) para los siniestros.
-    """
-    queryset = Siniestro.objects.all()
-    serializer_class = SiniestroSerializer
+from .models import Causa, Siniestro, TipoSiniestro, Victima
 
 
-# --- 2. Vistas para los Filtros (Para los <select> del frontend) ---
-
-class CausaViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Un ViewSet para listar solo las causas que están MARCADAS COMO ACTIVAS.
-    """
-    serializer_class = CausaSerializer
-    
-    # Usamos una función para filtrar solo las activas
-    def get_queryset(self):
-        return Causa.objects.filter(activo=True)
+class CausaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Causa
+        fields = ['id', 'nombre', 'activo']
 
 
-class TipoSiniestroViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Un ViewSet para listar solo los Tipos de Siniestro ACTIVOS.
-    """
-    serializer_class = TipoSiniestroSerializer
-    
-    # Usamos una función para filtrar solo las activas
-    def get_queryset(self):
-        return TipoSiniestro.objects.filter(activo=True)
+class TipoSiniestroSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TipoSiniestro
+        fields = ['id', 'nombre', 'activo']
+
+
+class VictimaSerializer(serializers.ModelSerializer):
+    condicion_label = serializers.CharField(source='get_condicion_display', read_only=True)
+    sexo_label = serializers.CharField(source='get_sexo_display', read_only=True)
+    actor_vial_label = serializers.CharField(source='get_actor_vial_display', read_only=True)
+
+    class Meta:
+        model = Victima
+        fields = [
+            'id',
+            'edad',
+            'condicion',
+            'condicion_label',
+            'sexo',
+            'sexo_label',
+            'actor_vial',
+            'actor_vial_label',
+        ]
+
+
+class SiniestroSerializer(serializers.ModelSerializer):
+    tipo_siniestro = TipoSiniestroSerializer(read_only=True)
+    causa_probable = CausaSerializer(read_only=True)
+    victimas = VictimaSerializer(many=True, read_only=True)
+    severidad_label = serializers.CharField(source='get_grado_severidad_display', read_only=True)
+
+    class Meta:
+        model = Siniestro
+        fields = [
+            'id',
+            'fecha_hora',
+            'latitud',
+            'longitud',
+            'via',
+            'grado_severidad',
+            'severidad_label',
+            'tipo_siniestro',
+            'causa_probable',
+            'victimas',
+        ]
