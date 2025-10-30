@@ -415,3 +415,35 @@ class VictimasPorMesView(APIView):
 
         data = [{'mes': month, 'total': monthly_totals[month]} for month in range(1, 13)]
         return Response(data)
+
+
+class VictimasPorHoraView(APIView):
+    """Aggregate victimas per hour of day for a given year."""
+
+    def get(self, request, format=None):
+        try:
+            year = int(request.query_params.get('year', datetime.now().year))
+        except ValueError:
+            return Response({'error': "Parámetro 'year' debe ser un número."}, status=400)
+
+        queryset = (
+            Victima.objects
+            .filter(siniestro__fecha_hora__year=year)
+            .annotate(hora=ExtractHour('siniestro__fecha_hora'))
+            .values('hora')
+            .annotate(total=Count('id'))
+            .order_by('hora')
+        )
+
+        hourly_totals = {hour: 0 for hour in range(24)}
+        for item in queryset:
+            hourly_totals[item['hora']] = item['total']
+
+        data = [
+            {
+                'rango_hora': f'{hour:02d}:00 - {hour:02d}:59',
+                'total': hourly_totals[hour],
+            }
+            for hour in range(24)
+        ]
+        return Response(data)

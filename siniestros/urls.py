@@ -21,6 +21,7 @@ urlpatterns = [
     path('stats/victimas/por-actor-vial/', views.VictimasPorActorVialView.as_view(), name='stats-victimas-por-actor-vial'),
     path('stats/victimas/por-edad-sexo/', views.VictimasPorEdadSexoView.as_view(), name='stats-victimas-por-edad-sexo'),
     path('stats/victimas/por-mes/', views.VictimasPorMesView.as_view(), name='stats-victimas-por-mes'),
+    path('stats/victimas/por-hora/', views.VictimasPorHoraView.as_view(), name='stats-victimas-por-hora'),
 
 ]
 
