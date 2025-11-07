@@ -123,30 +123,25 @@ def make_payload_summary(payload: Any) -> str:
 def run_with_test_client(year: int) -> None:
     client = Client()
     endpoints: Iterable[Tuple[str, Dict]] = [
-        # Siniestros
         ('/api/siniestros/', {}),
-        ('/api/siniestros/kpi_stats/', {}),
-        ('/api/siniestros/por_mes/', {'year': year}),
-        ('/api/siniestros/por_severidad/', {}),
-        ('/api/siniestros/por_hora/', {'year': year}),
-        ('/api/siniestros/por_dia_hora/', {'year': year}),
-        # Víctimas
-        ('/api/victimas/', {}),
-        ('/api/victimas/por_sexo/', {'year': year}),
-        ('/api/victimas/por_actor_vial/', {'year': year}),
-        ('/api/victimas/por_edad_sexo/', {'year': year}),
-        ('/api/victimas/por_mes/', {'year': year}),
-        ('/api/victimas/por_hora/', {'year': year}),
-        ('/api/victimas/por_dia_hora/', {'year': year}),
-        # Catálogos
         ('/api/causas/', {}),
         ('/api/tipos-siniestro/', {}),
+        ('/api/stats/kpis/', {}),
+        ('/api/stats/por-mes/', {'year': year}),
+        ('/api/stats/por-severidad/', {}),
+        ('/api/stats/por-hora/', {'year': year}),
+        ('/api/stats/por-dia-hora/', {'year': year}),
+        ('/api/stats/victimas/por-sexo/', {'year': year}),
+        ('/api/stats/victimas/por-actor-vial/', {'year': year}),
+        ('/api/stats/victimas/por-edad-sexo/', {'year': year}),
+        ('/api/stats/victimas/por-mes/', {'year': year}),
+        ('/api/stats/victimas/por-hora/', {'year': year}),
+        ('/api/stats/victimas/por-dia-hora/', {'year': year}),
     ]
 
     for path, params in endpoints:
         response = client.get(path, params)
-        status_icon = "✓" if response.status_code == 200 else "✗"
-        print(f"{status_icon} [internal] GET {path} -> {response.status_code}")
+        print(f"[internal] GET {path} -> {response.status_code}")
         print(make_payload_summary(response.json()))
         print('-' * 40)
 
@@ -157,38 +152,30 @@ def run_against_http(base_url: str, year: int) -> None:
 
     base = base_url.rstrip('/')
     endpoints = [
-        # Siniestros
         ('/api/siniestros/', {}),
-        ('/api/siniestros/kpi_stats/', {}),
-        ('/api/siniestros/por_mes/', {'year': year}),
-        ('/api/siniestros/por_severidad/', {}),
-        ('/api/siniestros/por_hora/', {'year': year}),
-        ('/api/siniestros/por_dia_hora/', {'year': year}),
-        # Víctimas
-        ('/api/victimas/', {}),
-        ('/api/victimas/por_sexo/', {'year': year}),
-        ('/api/victimas/por_actor_vial/', {'year': year}),
-        ('/api/victimas/por_edad_sexo/', {'year': year}),
-        ('/api/victimas/por_mes/', {'year': year}),
-        ('/api/victimas/por_hora/', {'year': year}),
-        ('/api/victimas/por_dia_hora/', {'year': year}),
-        # Catálogos
         ('/api/causas/', {}),
         ('/api/tipos-siniestro/', {}),
+        ('/api/stats/kpis/', {}),
+        ('/api/stats/por-mes/', {'year': year}),
+        ('/api/stats/por-severidad/', {}),
+        ('/api/stats/por-hora/', {'year': year}),
+        ('/api/stats/por-dia-hora/', {'year': year}),
+        ('/api/stats/victimas/por-sexo/', {'year': year}),
+        ('/api/stats/victimas/por-actor-vial/', {'year': year}),
+        ('/api/stats/victimas/por-edad-sexo/', {'year': year}),
+        ('/api/stats/victimas/por-mes/', {'year': year}),
+        ('/api/stats/victimas/por-hora/', {'year': year}),
+        ('/api/stats/victimas/por-dia-hora/', {'year': year}),
     ]
 
     for path, params in endpoints:
         url = f"{base}{path}"
         if params:
             url = f"{url}?{urllib.parse.urlencode(params)}"
-        try:
-            with urllib.request.urlopen(url) as response:
-                body = response.read().decode('utf-8')
-                print(f"✓ [http] GET {url} -> {response.status}")
-                print(body[:400])
-                print('-' * 40)
-        except Exception as e:
-            print(f"✗ [http] GET {url} -> ERROR: {e}")
+        with urllib.request.urlopen(url) as response:
+            body = response.read().decode('utf-8')
+            print(f"[http] GET {url} -> {response.status} at {response.url}")
+            print(body[:400])
             print('-' * 40)
 
 
