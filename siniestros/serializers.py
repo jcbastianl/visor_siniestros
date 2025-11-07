@@ -54,3 +54,65 @@ class SiniestroSerializer(serializers.ModelSerializer):
             'causa_probable',
             'victimas',
         ]
+
+
+# --- SERIALIZERS PARA ESTADÍSTICAS (FLAT) ---
+
+class KPIStatsSerializer(serializers.Serializer):
+    """Serializer para KPIs principales."""
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class MonthlyStatSerializer(serializers.Serializer):
+    """Serializer para agrupaciones mensuales."""
+    mes = serializers.IntegerField()
+    total = serializers.IntegerField()
+
+
+class DayMonthSerializer(serializers.Serializer):
+    """Serializer para datos por mes (Day-Month)."""
+    mes = serializers.IntegerField()
+    total = serializers.IntegerField()
+
+
+class HourlyStatSerializer(serializers.Serializer):
+    """Serializer para agrupaciones por hora."""
+    rango_hora = serializers.CharField()
+    total = serializers.IntegerField()
+
+
+class DayHourStatSerializer(serializers.Serializer):
+    """Serializer para matriz día/hora."""
+    dia_semana = serializers.IntegerField()
+    hora_dia = serializers.IntegerField()
+    total = serializers.IntegerField()
+
+
+class SeveridadStatSerializer(serializers.Serializer):
+    """Serializer para agrupación por severidad."""
+    codigo = serializers.CharField()
+    label = serializers.CharField()
+    total = serializers.IntegerField()
+
+
+class SexoStatSerializer(serializers.Serializer):
+    """Serializer para agrupación por sexo."""
+    codigo = serializers.CharField()
+    label = serializers.CharField()
+    total = serializers.IntegerField()
+
+
+class ActorVialStatSerializer(serializers.Serializer):
+    """Serializer para agrupación por actor vial."""
+    codigo = serializers.CharField()
+    label = serializers.CharField()
+    total = serializers.IntegerField()
+
+
+class EdadSexoRangeSerializer(serializers.Serializer):
+    """Serializer para matriz edad/sexo."""
+    rango = serializers.CharField()
+    hombre = serializers.IntegerField()
+    mujer = serializers.IntegerField()
