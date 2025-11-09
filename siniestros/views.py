@@ -5,6 +5,7 @@ Arquitectura pragmática:
 - Un ViewSet por recurso principal (Siniestro, Victima)
 - Acciones estadísticas integradas como @action(detail=False)
 - Lógica delegada a QuerySets en managers.py
+- Filtrado avanzado usando django-filter con SiniestroFilter
 - Caching automático para endpoints de estadísticas
 - Documentación Swagger automática con @extend_schema
 """
@@ -17,6 +18,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
 from .models import Siniestro, Victima, Causa, TipoSiniestro
+from .filters import SiniestroFilter, VictimaFilter
 from .serializers import (
     SiniestroSerializer, VictimaSerializer, CausaSerializer,
     TipoSiniestroSerializer, KPIStatsSerializer, MonthlyStatSerializer,
@@ -28,17 +30,11 @@ from .serializers import (
 
 
 class SiniestroViewSet(ReadOnlyModelViewSet):
-    """ViewSet para Siniestros con estadísticas integradas."""
+    """ViewSet para Siniestros con estadísticas integradas y filtros avanzados."""
 
     queryset = Siniestro.objects.all()
     serializer_class = SiniestroSerializer
-
-    def _validate_year(self, year_str):
-        """Helper: valida y retorna el año, o None si no es válido."""
-        try:
-            return int(year_str) if year_str else None
-        except (ValueError, TypeError):
-            return None
+    filterset_class = SiniestroFilter
 
     @extend_schema(
         summary="KPIs principales",
@@ -63,8 +59,14 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_mes(self, request):
         """Siniestros por mes (rellena meses vacíos con 0)."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        # Obtén el año del queryset filtrado si está disponible
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_mes(year=year)
         serializer = MonthlyStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -92,8 +94,13 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_hora(self, request):
         """Siniestros por hora del día (rellena horas vacías con 0)."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_hora(year=year)
         serializer = HourlyStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -107,8 +114,13 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_dia_hora(self, request):
         """Siniestros por día de semana × hora (matriz 7×24)."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_dia_hora(year=year)
         serializer = DayHourStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -122,8 +134,13 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_via(self, request):
         """Siniestros por vía (Top 20)."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_via(year=year)
         serializer = ViaStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -137,8 +154,13 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_causa_probable(self, request):
         """Siniestros por causa probable."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_causa_probable(year=year)
         serializer = CausaProbableStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -152,8 +174,13 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_tipo_siniestro(self, request):
         """Siniestros por tipo de siniestro."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_tipo_siniestro(year=year)
         serializer = TipoSiniestroStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -174,17 +201,11 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
 
 
 class VictimaViewSet(ReadOnlyModelViewSet):
-    """ViewSet para Víctimas con estadísticas integradas."""
+    """ViewSet para Víctimas con estadísticas integradas y filtros avanzados."""
 
     queryset = Victima.objects.all()
     serializer_class = VictimaSerializer
-
-    def _validate_year(self, year_str):
-        """Helper: valida y retorna el año, o None si no es válido."""
-        try:
-            return int(year_str) if year_str else None
-        except (ValueError, TypeError):
-            return None
+    filterset_class = VictimaFilter
 
     @extend_schema(
         summary="Estadísticas por sexo",
@@ -195,8 +216,13 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_sexo(self, request):
         """Víctimas por sexo."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_sexo(year=year)
         serializer = SexoStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -210,8 +236,13 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_actor_vial(self, request):
         """Víctimas por actor vial (peatón, conductor, pasajero)."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_actor_vial(year=year)
         serializer = ActorVialStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -225,8 +256,13 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_edad_sexo(self, request):
         """Víctimas por rango de edad y sexo."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_edad_sexo(year=year)
         serializer = EdadSexoRangeSerializer(stats, many=True)
         return Response(serializer.data)
@@ -240,8 +276,13 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_mes(self, request):
         """Víctimas por mes."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_mes(year=year)
         serializer = MonthlyStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -255,8 +296,13 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_hora(self, request):
         """Víctimas por hora del día."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_hora(year=year)
         serializer = HourlyStatSerializer(stats, many=True)
         return Response(serializer.data)
@@ -270,8 +316,13 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     @method_decorator(cache_page(60 * 5))
     def por_dia_hora(self, request):
         """Víctimas por día de semana × hora."""
-        year = self._validate_year(request.query_params.get('year'))
         queryset = self.filter_queryset(self.get_queryset())
+        year = request.query_params.get('year')
+        if year:
+            try:
+                year = int(year)
+            except (ValueError, TypeError):
+                year = None
         stats = queryset.get_por_dia_hora(year=year)
         serializer = DayHourStatSerializer(stats, many=True)
         return Response(serializer.data)

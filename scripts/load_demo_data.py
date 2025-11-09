@@ -3,6 +3,9 @@
 Script para cargar muchos datos de prueba en la base de datos.
 Genera siniestros y víctimas realistas para visualización en el frontend.
 
+Los datos están centrados en Loja, Ecuador (Latitud: -4.007, Longitud: -79.201)
+con nombres de vías reales de la ciudad.
+
 Uso:
     python scripts/load_demo_data.py
 """
@@ -12,7 +15,7 @@ import sys
 import django
 from datetime import datetime, timedelta
 from pathlib import Path
-from random import randint, choice
+from random import randint, choice, uniform
 
 # Setup Django
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -96,21 +99,55 @@ def create_siniestros(tipo_objs, causa_objs, num_siniestros=500):
         Siniestro.Severidad.SOLO_DANOS,
     ]
     
+    # 🗺️  Vías principales y reales de Loja, Ecuador
     vias = [
-        "Av. Corrientes",
-        "Av. 9 de Julio",
-        "Calle Florida",
-        "Ruta Nacional 2",
-        "Ruta Nacional 5",
-        "Autopista Buenos Aires - La Plata",
-        "Avenida Rivadavia",
-        "Calle Esmeralda",
-        "Avenida de Mayo",
-        "Ruta 34",
+        # Avenidas principales
+        "Av. Orillas del Zamora",
+        "Av. Cuxibamba",
+        "Av. 8 de Diciembre",
+        "Av. Manuel Agustín Aguirre",
+        "Av. Universitaria",
+        "Av. Reinaldo Espinosa",
+        "Av. Pio Jaramillo",
+        "Av. Gran Colombia",
+        "Av. Metropolitana",
+        "Av. Rosa Hermosa",
+        
+        # Calles principales del centro
+        "Calle Bolívar",
+        "Calle Miguel Riofrío",
+        "Calle Ramón Borrero",
+        "Calle 10 de Agosto",
+        "Calle 18 de Noviembre",
+        "Calle Sucre",
+        "Calle Quito",
+        "Calle Rocafuerte",
+        "Calle Saraguro",
+        
+        # Otras vías importantes
+        "Vía Loja - Zamora",
+        "Vía Loja - Catamayo",
+        "Ruta 35",
+        "Ruta 37",
+        "Calle Montúfar",
+        "Calle Mercadillo",
+        "Av. Isidro Ayora",
+        "Calle Colón",
+        "Calle Imbabura",
+        "Calle Azogues",
     ]
     
     siniestros = []
     start_date = timezone.now() - timedelta(days=730)  # 2 años atrás
+    
+    # Centro de Loja, Ecuador (Latitud: -4.007, Longitud: -79.201)
+    LOJA_LAT = -4.007
+    LOJA_LON = -79.201
+    
+    # Variación aleatoria para dispersar los siniestros en el área urbana
+    # ~0.03 grados ≈ 3.3 km (radio de cobertura aproximado)
+    LAT_VARIATION = 0.025
+    LON_VARIATION = 0.025
     
     for i in range(num_siniestros):
         # Distribuir aleatoriamente en el tiempo
@@ -123,8 +160,9 @@ def create_siniestros(tipo_objs, causa_objs, num_siniestros=500):
         
         siniestro = Siniestro(
             fecha_hora=fecha_hora,
-            latitud=-34.6037 + (randint(-100, 100) / 1000),  # Buenos Aires area
-            longitud=-58.3816 + (randint(-100, 100) / 1000),
+            # Coordenadas centradas en Loja con variación aleatoria
+            latitud=LOJA_LAT + uniform(-LAT_VARIATION, LAT_VARIATION),
+            longitud=LOJA_LON + uniform(-LON_VARIATION, LON_VARIATION),
             via=choice(vias),
             grado_severidad=choice(severidades),
             tipo_siniestro=choice(tipo_objs),

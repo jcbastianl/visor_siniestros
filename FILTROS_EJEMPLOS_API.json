@@ -1,0 +1,194 @@
+{
+  "titulo": "Ejemplos de Uso - Filtros Avanzados API",
+  "version": "1.0",
+  "descripcion": "Colección de ejemplos de requests con filtros avanzados para django-filter",
+  "ejemplos_siniestros": {
+    "filtro_basico": {
+      "descripcion": "Obtener todos los siniestros del 2024",
+      "endpoint": "GET /api/siniestros/",
+      "parametros": {
+        "fecha_hora__year": 2024
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/?fecha_hora__year=2024"
+    },
+    "filtro_temporal_completo": {
+      "descripcion": "Siniestros de jueves a las 15 horas en junio de 2024",
+      "endpoint": "GET /api/siniestros/",
+      "parametros": {
+        "fecha_hora__year": 2024,
+        "fecha_hora__month": 6,
+        "fecha_hora__week_day": 5,
+        "fecha_hora__hour": 15
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/?fecha_hora__year=2024&fecha_hora__month=6&fecha_hora__week_day=5&fecha_hora__hour=15"
+    },
+    "filtro_por_severidad": {
+      "descripcion": "Siniestros graves de 2024",
+      "endpoint": "GET /api/siniestros/",
+      "parametros": {
+        "fecha_hora__year": 2024,
+        "grado_severidad": "GRAVE"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/?fecha_hora__year=2024&grado_severidad=GRAVE"
+    },
+    "filtro_por_causas": {
+      "descripcion": "Siniestros por causa probable (ID=1) en 2024",
+      "endpoint": "GET /api/siniestros/",
+      "parametros": {
+        "fecha_hora__year": 2024,
+        "causa_probable": 1
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/?fecha_hora__year=2024&causa_probable=1"
+    },
+    "filtro_busqueda_via": {
+      "descripcion": "Siniestros en vías que contengan 'carrera'",
+      "endpoint": "GET /api/siniestros/",
+      "parametros": {
+        "via": "carrera"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/?via=carrera"
+    },
+    "filtro_rango_años": {
+      "descripcion": "Siniestros entre 2022 y 2024",
+      "endpoint": "GET /api/siniestros/",
+      "parametros": {
+        "fecha_hora__year_range_min": 2022,
+        "fecha_hora__year_range_max": 2024
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/?fecha_hora__year_range_min=2022&fecha_hora__year_range_max=2024"
+    },
+    "estadisticas_filtradas_por_mes": {
+      "descripcion": "Estadísticas mensuales de siniestros graves en 2024",
+      "endpoint": "GET /api/siniestros/por_mes/",
+      "parametros": {
+        "fecha_hora__year": 2024,
+        "grado_severidad": "GRAVE"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/por_mes/?fecha_hora__year=2024&grado_severidad=GRAVE"
+    },
+    "estadisticas_por_via_filtradas": {
+      "descripcion": "Top vías para siniestros críticos de 2024",
+      "endpoint": "GET /api/siniestros/por_via/",
+      "parametros": {
+        "fecha_hora__year": 2024,
+        "grado_severidad": "CRITICO"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/siniestros/por_via/?fecha_hora__year=2024&grado_severidad=CRITICO"
+    }
+  },
+  "ejemplos_victimas": {
+    "lista_basica": {
+      "descripcion": "Todas las víctimas del 2024",
+      "endpoint": "GET /api/victimas/",
+      "parametros": {
+        "siniestro__fecha_hora__year": 2024
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/?siniestro__fecha_hora__year=2024"
+    },
+    "filtro_por_sexo": {
+      "descripcion": "Víctimas femeninas del 2024",
+      "endpoint": "GET /api/victimas/",
+      "parametros": {
+        "siniestro__fecha_hora__year": 2024,
+        "sexo": "F"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/?siniestro__fecha_hora__year=2024&sexo=F"
+    },
+    "filtro_por_condicion": {
+      "descripcion": "Víctimas fallecidas en 2024",
+      "endpoint": "GET /api/victimas/",
+      "parametros": {
+        "siniestro__fecha_hora__year": 2024,
+        "condicion": "FALLECIDO"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/?siniestro__fecha_hora__year=2024&condicion=FALLECIDO"
+    },
+    "filtro_por_actor_vial": {
+      "descripcion": "Peatones menores de 18 años",
+      "endpoint": "GET /api/victimas/",
+      "parametros": {
+        "actor_vial": "PEATÓN",
+        "edad_max": 17
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/?actor_vial=PEATÓN&edad_max=17"
+    },
+    "filtro_rango_edad": {
+      "descripcion": "Víctimas adultas (18-65 años) en 2024",
+      "endpoint": "GET /api/victimas/",
+      "parametros": {
+        "siniestro__fecha_hora__year": 2024,
+        "edad_min": 18,
+        "edad_max": 65
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/?siniestro__fecha_hora__year=2024&edad_min=18&edad_max=65"
+    },
+    "filtro_complejo": {
+      "descripcion": "Hombres fallecidos peatones en siniestros de 2024",
+      "endpoint": "GET /api/victimas/",
+      "parametros": {
+        "siniestro__fecha_hora__year": 2024,
+        "sexo": "M",
+        "condicion": "FALLECIDO",
+        "actor_vial": "PEATÓN"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/?siniestro__fecha_hora__year=2024&sexo=M&condicion=FALLECIDO&actor_vial=PEATÓN"
+    },
+    "estadisticas_filtradas": {
+      "descripcion": "Evolución anual de víctimas peatones",
+      "endpoint": "GET /api/victimas/evolucion_anual/",
+      "parametros": {
+        "actor_vial": "PEATÓN"
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/evolucion_anual/?actor_vial=PEATÓN"
+    },
+    "estadisticas_por_sexo_filtradas": {
+      "descripcion": "Distribución por sexo de víctimas en 2024",
+      "endpoint": "GET /api/victimas/por_sexo/",
+      "parametros": {
+        "siniestro__fecha_hora__year": 2024
+      },
+      "url_completa": "http://127.0.0.1:8002/api/victimas/por_sexo/?siniestro__fecha_hora__year=2024"
+    }
+  },
+  "valores_enumerados": {
+    "dias_semana": {
+      "1": "Domingo",
+      "2": "Lunes",
+      "3": "Martes",
+      "4": "Miércoles",
+      "5": "Jueves",
+      "6": "Viernes",
+      "7": "Sábado"
+    },
+    "severidad": [
+      "LEVE",
+      "MODERADO",
+      "GRAVE",
+      "CRITICO"
+    ],
+    "sexo": {
+      "M": "Masculino",
+      "F": "Femenino",
+      "O": "Otro"
+    },
+    "condicion": [
+      "LESIONADO",
+      "FALLECIDO",
+      "ILESO"
+    ],
+    "actor_vial": [
+      "PEATÓN",
+      "CONDUCTOR",
+      "PASAJERO",
+      "CICLISTA",
+      "MOTOCICLISTA"
+    ],
+    "horas": "0-23 (representan rangos horarios, ej: 15 = 15:00-15:59)"
+  },
+  "notes": {
+    "combinacion_filtros": "Todos los filtros se combinan con lógica AND (todas las condiciones deben cumplirse)",
+    "case_sensitivity": "Los valores enum (severidad, sexo, etc.) son case-sensitive, use MAYÚSCULAS",
+    "paginacion": "Los filtros funcionan con paginación: ?fecha_hora__year=2024&limit=50&offset=0",
+    "performance": "Los filtros se aplican a nivel de base de datos para optimizar performance"
+  }
+}
