@@ -21,7 +21,9 @@ from .serializers import (
     SiniestroSerializer, VictimaSerializer, CausaSerializer,
     TipoSiniestroSerializer, KPIStatsSerializer, MonthlyStatSerializer,
     HourlyStatSerializer, DayHourStatSerializer, SeveridadStatSerializer,
-    SexoStatSerializer, ActorVialStatSerializer, EdadSexoRangeSerializer
+    SexoStatSerializer, ActorVialStatSerializer, EdadSexoRangeSerializer,
+    ViaStatSerializer, CausaProbableStatSerializer, TipoSiniestroStatSerializer,
+    EvolucionAnualSiniestrosSerializer, EvolucionAnualVictimasSerializer
 )
 
 
@@ -109,6 +111,65 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         stats = queryset.get_por_dia_hora(year=year)
         serializer = DayHourStatSerializer(stats, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Estadísticas por vía",
+        description="Siniestros agrupados por vía con conteo de lesionados y fallecidos",
+        responses=ViaStatSerializer(many=True)
+    )
+    @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 5))
+    def por_via(self, request):
+        """Siniestros por vía (Top 20)."""
+        year = self._validate_year(request.query_params.get('year'))
+        queryset = self.filter_queryset(self.get_queryset())
+        stats = queryset.get_por_via(year=year)
+        serializer = ViaStatSerializer(stats, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Estadísticas por causa probable",
+        description="Siniestros agrupados por causa probable",
+        responses=CausaProbableStatSerializer(many=True)
+    )
+    @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 5))
+    def por_causa_probable(self, request):
+        """Siniestros por causa probable."""
+        year = self._validate_year(request.query_params.get('year'))
+        queryset = self.filter_queryset(self.get_queryset())
+        stats = queryset.get_por_causa_probable(year=year)
+        serializer = CausaProbableStatSerializer(stats, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Estadísticas por tipo de siniestro",
+        description="Siniestros agrupados por tipo",
+        responses=TipoSiniestroStatSerializer(many=True)
+    )
+    @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 5))
+    def por_tipo_siniestro(self, request):
+        """Siniestros por tipo de siniestro."""
+        year = self._validate_year(request.query_params.get('year'))
+        queryset = self.filter_queryset(self.get_queryset())
+        stats = queryset.get_por_tipo_siniestro(year=year)
+        serializer = TipoSiniestroStatSerializer(stats, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Evolución anual de siniestros",
+        description="Siniestros, lesionados y fallecidos por año",
+        responses=EvolucionAnualSiniestrosSerializer(many=True)
+    )
+    @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 60))  # Cache 1 hora
+    def evolucion_anual(self, request):
+        """Evolución anual de siniestros."""
+        queryset = self.filter_queryset(self.get_queryset())
+        stats = queryset.get_evolucion_anual()
+        serializer = EvolucionAnualSiniestrosSerializer(stats, many=True)
         return Response(serializer.data)
 
 
@@ -213,6 +274,20 @@ class VictimaViewSet(ReadOnlyModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         stats = queryset.get_por_dia_hora(year=year)
         serializer = DayHourStatSerializer(stats, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Evolución anual de víctimas",
+        description="Víctimas totales por año",
+        responses=EvolucionAnualVictimasSerializer(many=True)
+    )
+    @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 60))  # Cache 1 hora
+    def evolucion_anual(self, request):
+        """Evolución anual de víctimas."""
+        queryset = self.filter_queryset(self.get_queryset())
+        stats = queryset.get_evolucion_anual()
+        serializer = EvolucionAnualVictimasSerializer(stats, many=True)
         return Response(serializer.data)
 
 

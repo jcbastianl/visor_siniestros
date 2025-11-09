@@ -1,0 +1,183 @@
+{
+  "endpoints_nuevos": {
+    "por_via": {
+      "descripcion": "Top 20 vías con estadísticas de siniestros",
+      "url": "/api/siniestros/por_via/?year=2024",
+      "metodo": "GET",
+      "parametros": {
+        "year": "Año de filtro (opcional, por defecto año actual)"
+      },
+      "respuesta_ejemplo": [
+        {
+          "via": "Av. Corrientes",
+          "total_siniestros": 45,
+          "total_lesionados": 67,
+          "total_fallecidos": 12
+        },
+        {
+          "via": "Ruta Nacional 2",
+          "total_siniestros": 38,
+          "total_lesionados": 52,
+          "total_fallecidos": 9
+        }
+      ]
+    },
+
+    "por_causa_probable": {
+      "descripcion": "Siniestros agrupados por causa probable",
+      "url": "/api/siniestros/por_causa_probable/?year=2024",
+      "metodo": "GET",
+      "parametros": {
+        "year": "Año de filtro (opcional, por defecto año actual)"
+      },
+      "respuesta_ejemplo": [
+        {
+          "id": 1,
+          "causa": "Exceso de velocidad",
+          "total_siniestros": 120,
+          "total_lesionados": 180,
+          "total_fallecidos": 35
+        },
+        {
+          "id": 2,
+          "causa": "Imprudencia del conductor",
+          "total_siniestros": 95,
+          "total_lesionados": 145,
+          "total_fallecidos": 28
+        },
+        {
+          "id": 3,
+          "causa": "Vía resbaladiza o mojada",
+          "total_siniestros": 65,
+          "total_lesionados": 95,
+          "total_fallecidos": 15
+        }
+      ]
+    },
+
+    "por_tipo_siniestro": {
+      "descripcion": "Siniestros agrupados por tipo",
+      "url": "/api/siniestros/por_tipo_siniestro/?year=2024",
+      "metodo": "GET",
+      "parametros": {
+        "year": "Año de filtro (opcional, por defecto año actual)"
+      },
+      "respuesta_ejemplo": [
+        {
+          "id": 1,
+          "tipo": "Choque Vehicular",
+          "total_siniestros": 200,
+          "total_lesionados": 320,
+          "total_fallecidos": 65
+        },
+        {
+          "id": 2,
+          "tipo": "Atropellamiento",
+          "total_siniestros": 85,
+          "total_lesionados": 120,
+          "total_fallecidos": 25
+        },
+        {
+          "id": 3,
+          "tipo": "Volcamiento",
+          "total_siniestros": 45,
+          "total_lesionados": 75,
+          "total_fallecidos": 18
+        }
+      ]
+    },
+
+    "evolucion_anual_siniestros": {
+      "descripcion": "Evolución anual de siniestros, lesionados y fallecidos",
+      "url": "/api/siniestros/evolucion_anual/",
+      "metodo": "GET",
+      "parametros": "Sin parámetros",
+      "respuesta_ejemplo": [
+        {
+          "ano": 2023,
+          "total_siniestros": 450,
+          "total_lesionados": 680,
+          "total_fallecidos": 145
+        },
+        {
+          "ano": 2024,
+          "total_siniestros": 500,
+          "total_lesionados": 764,
+          "total_fallecidos": 170
+        },
+        {
+          "ano": 2025,
+          "total_siniestros": 280,
+          "total_lesionados": 425,
+          "total_fallecidos": 92
+        }
+      ]
+    },
+
+    "evolucion_anual_victimas": {
+      "descripcion": "Evolución anual de víctimas (total)",
+      "url": "/api/victimas/evolucion_anual/",
+      "metodo": "GET",
+      "parametros": "Sin parámetros",
+      "respuesta_ejemplo": [
+        {
+          "ano": 2023,
+          "total": 825
+        },
+        {
+          "ano": 2024,
+          "total": 934
+        },
+        {
+          "ano": 2025,
+          "total": 517
+        }
+      ]
+    }
+  },
+
+  "detalles_tecnicos": {
+    "caching": {
+      "por_via": "5 minutos",
+      "por_causa_probable": "5 minutos",
+      "por_tipo_siniestro": "5 minutos",
+      "evolucion_anual_siniestros": "1 hora",
+      "evolucion_anual_victimas": "1 hora"
+    },
+    
+    "ordenamiento": {
+      "por_via": "descendente por total_siniestros (Top 20)",
+      "por_causa_probable": "descendente por total_siniestros",
+      "por_tipo_siniestro": "descendente por total_siniestros",
+      "evolucion_anual": "ascendente por año"
+    },
+
+    "paginacion": "No aplicable (excepto por_via que retorna Top 20)"
+  },
+
+  "casos_de_uso_frontend": {
+    "grafico_barras": "por_via - Mostrar barras de siniestros por vía",
+    "tabla_causas": "por_causa_probable - Tabla searchable/sortable",
+    "tabla_tipos": "por_tipo_siniestro - Tabla searchable/sortable",
+    "grafico_linea_anual": "evolucion_anual - Mostrar evolución en años",
+    "KPI_tarjeta": "Los datos de evolucion_anual pueden condensarse para mostrar KPIs de cambio anual"
+  },
+
+  "sugerencias_frontend_react": {
+    "grafico_por_via": {
+      "libreria": "recharts o chart.js",
+      "componente": "BarChart",
+      "datos": "via (x-axis), total_siniestros/lesionados/fallecidos (y-axis)"
+    },
+    "tabla_causas": {
+      "libreria": "react-table o Material-UI DataGrid",
+      "columnas": ["causa", "total_siniestros", "total_lesionados", "total_fallecidos"],
+      "features": "sorting, filtering, pagination"
+    },
+    "grafico_evolucion_anual": {
+      "libreria": "recharts o chart.js",
+      "componente": "LineChart o AreaChart",
+      "lineas": ["siniestros", "lesionados", "fallecidos"]
+    }
+  }
+}

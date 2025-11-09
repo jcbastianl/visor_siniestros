@@ -1,0 +1,243 @@
+"""
+RESUMEN DE CAMBIOS EN LA ARQUITECTURA API
+=========================================
+
+Este archivo documenta los cambios realizados en managers.py, views.py y serializers.py
+para expandir los endpoints estadísticos de la API Django.
+
+PATRÓN UTILIZADO:
+  URL → ViewSet (@action) → Manager (delegación) → QuerySet (lógica) → Serializer → JSON
+
+"""
+
+# ============================================================================
+# 1. MANAGERS.PY - Nuevos métodos de agregación
+# ============================================================================
+
+# En SiniestroQuerySet:
+# ─────────────────────
+
+def get_por_via(self, year=None):
+    """Agrupa siniestros por vía (Top 20)"""
+    # Retorna: via, total_siniestros, total_lesionados, total_fallecidos
+
+def get_por_causa_probable(self, year=None):
+    """Agrupa siniestros por causa probable"""
+    # Retorna: id, causa, total_siniestros, total_lesionados, total_fallecidos
+
+def get_por_tipo_siniestro(self, year=None):
+    """Agrupa siniestros por tipo"""
+    # Retorna: id, tipo, total_siniestros, total_lesionados, total_fallecidos
+
+def get_evolucion_anual(self):
+    """Evolución anual de siniestros"""
+    # Retorna: ano, total_siniestros, total_lesionados, total_fallecidos
+
+
+# En SiniestroManager:
+# ────────────────────
+
+# Se añaden delegados:
+# - get_por_via(year=None)
+# - get_por_causa_probable(year=None)
+# - get_por_tipo_siniestro(year=None)
+# - get_evolucion_anual()
+
+
+# En VictimaQuerySet:
+# ───────────────────
+
+def get_evolucion_anual(self):
+    """Evolución anual de víctimas"""
+    # Retorna: ano, total
+
+
+# En VictimaManager:
+# ──────────────────
+
+# Se añade delegado:
+# - get_evolucion_anual()
+
+
+# ============================================================================
+# 2. SERIALIZERS.PY - Nuevos serializers
+# ============================================================================
+
+class ViaStatSerializer(serializers.Serializer):
+    """Para por_via endpoint"""
+    via = serializers.CharField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class CausaProbableStatSerializer(serializers.Serializer):
+    """Para por_causa_probable endpoint"""
+    id = serializers.IntegerField()
+    causa = serializers.CharField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class TipoSiniestroStatSerializer(serializers.Serializer):
+    """Para por_tipo_siniestro endpoint"""
+    id = serializers.IntegerField()
+    tipo = serializers.CharField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class EvolucionAnualSiniestrosSerializer(serializers.Serializer):
+    """Para evolucion_anual endpoint en Siniestros"""
+    ano = serializers.IntegerField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class EvolucionAnualVictimasSerializer(serializers.Serializer):
+    """Para evolucion_anual endpoint en Víctimas"""
+    ano = serializers.IntegerField()
+    total = serializers.IntegerField()
+
+
+# ============================================================================
+# 3. VIEWS.PY - Nuevos endpoints en ViewSets
+# ============================================================================
+
+# En SiniestroViewSet:
+# ────────────────────
+
+@action(detail=False, methods=['get'])
+@method_decorator(cache_page(60 * 5))
+def por_via(self, request):
+    """GET /api/siniestros/por_via/?year=YYYY"""
+    year = self._validate_year(request.query_params.get('year'))
+    queryset = self.filter_queryset(self.get_queryset())
+    stats = queryset.get_por_via(year=year)
+    serializer = ViaStatSerializer(stats, many=True)
+    return Response(serializer.data)
+
+
+@action(detail=False, methods=['get'])
+@method_decorator(cache_page(60 * 5))
+def por_causa_probable(self, request):
+    """GET /api/siniestros/por_causa_probable/?year=YYYY"""
+    year = self._validate_year(request.query_params.get('year'))
+    queryset = self.filter_queryset(self.get_queryset())
+    stats = queryset.get_por_causa_probable(year=year)
+    serializer = CausaProbableStatSerializer(stats, many=True)
+    return Response(serializer.data)
+
+
+@action(detail=False, methods=['get'])
+@method_decorator(cache_page(60 * 5))
+def por_tipo_siniestro(self, request):
+    """GET /api/siniestros/por_tipo_siniestro/?year=YYYY"""
+    year = self._validate_year(request.query_params.get('year'))
+    queryset = self.filter_queryset(self.get_queryset())
+    stats = queryset.get_por_tipo_siniestro(year=year)
+    serializer = TipoSiniestroStatSerializer(stats, many=True)
+    return Response(serializer.data)
+
+
+@action(detail=False, methods=['get'])
+@method_decorator(cache_page(60 * 60))  # 1 hora
+def evolucion_anual(self, request):
+    """GET /api/siniestros/evolucion_anual/"""
+    queryset = self.filter_queryset(self.get_queryset())
+    stats = queryset.get_evolucion_anual()
+    serializer = EvolucionAnualSiniestrosSerializer(stats, many=True)
+    return Response(serializer.data)
+
+
+# En VictimaViewSet:
+# ──────────────────
+
+@action(detail=False, methods=['get'])
+@method_decorator(cache_page(60 * 60))  # 1 hora
+def evolucion_anual(self, request):
+    """GET /api/victimas/evolucion_anual/"""
+    queryset = self.filter_queryset(self.get_queryset())
+    stats = queryset.get_evolucion_anual()
+    serializer = EvolucionAnualVictimasSerializer(stats, many=True)
+    return Response(serializer.data)
+
+
+# ============================================================================
+# PRUEBAS DE ENDPOINTS
+# ============================================================================
+
+"""
+curl http://127.0.0.1:8002/api/siniestros/por_via/?year=2024
+curl http://127.0.0.1:8002/api/siniestros/por_causa_probable/?year=2024
+curl http://127.0.0.1:8002/api/siniestros/por_tipo_siniestro/?year=2024
+curl http://127.0.0.1:8002/api/siniestros/evolucion_anual/
+curl http://127.0.0.1:8002/api/victimas/evolucion_anual/
+"""
+
+# ============================================================================
+# INTEGRACIÓN EN EL FRONTEND (React)
+# ============================================================================
+
+"""
+// Ejemplo de consumo en React con Axios
+
+import axios from 'axios';
+
+const API_BASE = 'http://127.0.0.1:8002/api';
+
+// Obtener estadísticas por vía
+const fetchPorVia = async (year) => {
+  const response = await axios.get(`${API_BASE}/siniestros/por_via/?year=${year}`);
+  return response.data;
+};
+
+// Obtener evolución anual
+const fetchEvolucionAnual = async () => {
+  const response = await axios.get(`${API_BASE}/siniestros/evolucion_anual/`);
+  return response.data;
+};
+
+// Usar en componentes
+useEffect(() => {
+  fetchPorVia(2024).then(data => {
+    // Render gráfico de barras
+  });
+  
+  fetchEvolucionAnual().then(data => {
+    // Render gráfico de línea
+  });
+}, []);
+"""
+
+# ============================================================================
+# BENEFICIOS DE LA ARQUITECTURA
+# ============================================================================
+
+"""
+✅ Separación de Responsabilidades:
+   - Managers: Lógica de agregación
+   - Views: Orquestación de requests
+   - Serializers: Estructuración de datos
+
+✅ Reutilización:
+   - Un método del manager puede usarse en múltiples vistas
+   - Los queries pueden combinarse fácilmente
+
+✅ Testing:
+   - Fácil de testear cada capa independientemente
+   - Tests unitarios en managers
+   - Tests de integración en views
+
+✅ Performance:
+   - Caching automático con @method_decorator(cache_page())
+   - Uso eficiente de ORM (bulk operations)
+   - Índices en campos con `db_index=True`
+
+✅ Documentación:
+   - Automática con @extend_schema (Swagger/OpenAPI)
+   - Self-documenting code
+"""

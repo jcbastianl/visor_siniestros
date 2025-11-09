@@ -6,7 +6,7 @@ Centraliza toda la lógica de análisis estadístico para mantener models.py lim
 
 from django.db import models
 from django.db.models import Count, Case, When, Value, CharField
-from django.db.models.functions import TruncMonth, ExtractHour, ExtractWeekDay
+from django.db.models.functions import TruncMonth, ExtractHour, ExtractWeekDay, TruncYear
 from datetime import datetime
 
 
@@ -122,6 +122,153 @@ class SiniestroQuerySet(models.QuerySet):
             for hour in range(24)
         ]
 
+    def get_por_via(self, year=None):
+        """Agrupa por vía con conteo de siniestros, lesionados y fallecidos."""
+        from .models import Victima
+        
+        year = self._get_year_param(year)
+        queryset = (
+            self.filter(fecha_hora__year=year)
+            .values('via')
+            .annotate(total_siniestros=Count('id'))
+            .order_by('-total_siniestros')[:20]  # Top 20 vías
+        )
+        
+        result = []
+        for item in queryset:
+            via = item['via']
+            siniestros_en_via = self.filter(fecha_hora__year=year, via=via)
+            lesionados = Victima.objects.filter(
+                condicion=Victima.Condicion.LESIONADO,
+                siniestro__in=siniestros_en_via
+            ).count()
+            fallecidos = Victima.objects.filter(
+                condicion=Victima.Condicion.FALLECIDO,
+                siniestro__in=siniestros_en_via
+            ).count()
+            
+            result.append({
+                'via': via or 'Sin especificar',
+                'total_siniestros': item['total_siniestros'],
+                'total_lesionados': lesionados,
+                'total_fallecidos': fallecidos,
+            })
+        
+        return result
+
+    def get_por_causa_probable(self, year=None):
+        """Agrupa por causa probable con totales."""
+        from .models import Victima
+        
+        year = self._get_year_param(year)
+        queryset = (
+            self.filter(fecha_hora__year=year)
+            .values('causa_probable__nombre', 'causa_probable__id')
+            .annotate(total_siniestros=Count('id'))
+            .order_by('-total_siniestros')
+        )
+        
+        result = []
+        for item in queryset:
+            causa_nombre = item['causa_probable__nombre'] or 'Sin especificar'
+            siniestros_causa = self.filter(
+                fecha_hora__year=year,
+                causa_probable__nombre=item['causa_probable__nombre']
+            )
+            lesionados = Victima.objects.filter(
+                condicion=Victima.Condicion.LESIONADO,
+                siniestro__in=siniestros_causa
+            ).count()
+            fallecidos = Victima.objects.filter(
+                condicion=Victima.Condicion.FALLECIDO,
+                siniestro__in=siniestros_causa
+            ).count()
+            
+            result.append({
+                'id': item['causa_probable__id'],
+                'causa': causa_nombre,
+                'total_siniestros': item['total_siniestros'],
+                'total_lesionados': lesionados,
+                'total_fallecidos': fallecidos,
+            })
+        
+        return result
+
+    def get_por_tipo_siniestro(self, year=None):
+        """Agrupa por tipo de siniestro con totales."""
+        from .models import Victima
+        
+        year = self._get_year_param(year)
+        queryset = (
+            self.filter(fecha_hora__year=year)
+            .values('tipo_siniestro__nombre', 'tipo_siniestro__id')
+            .annotate(total_siniestros=Count('id'))
+            .order_by('-total_siniestros')
+        )
+        
+        result = []
+        for item in queryset:
+            tipo_nombre = item['tipo_siniestro__nombre'] or 'Sin especificar'
+            siniestros_tipo = self.filter(
+                fecha_hora__year=year,
+                tipo_siniestro__nombre=item['tipo_siniestro__nombre']
+            )
+            lesionados = Victima.objects.filter(
+                condicion=Victima.Condicion.LESIONADO,
+                siniestro__in=siniestros_tipo
+            ).count()
+            fallecidos = Victima.objects.filter(
+                condicion=Victima.Condicion.FALLECIDO,
+                siniestro__in=siniestros_tipo
+            ).count()
+            
+            result.append({
+                'id': item['tipo_siniestro__id'],
+                'tipo': tipo_nombre,
+                'total_siniestros': item['total_siniestros'],
+                'total_lesionados': lesionados,
+                'total_fallecidos': fallecidos,
+            })
+        
+        return result
+
+    def get_evolucion_anual(self):
+        """Evolución anual de siniestros, lesionados y fallecidos."""
+        from .models import Victima
+        
+        years_data = (
+            self
+            .annotate(ano=TruncYear('fecha_hora'))
+            .values('ano')
+            .annotate(total_siniestros=Count('id'))
+            .order_by('ano')
+        )
+        
+        result = []
+        for item in years_data:
+            if not item['ano']:
+                continue
+            
+            year = item['ano'].year
+            siniestros_year = self.filter(fecha_hora__year=year)
+            lesionados = Victima.objects.filter(
+                condicion=Victima.Condicion.LESIONADO,
+                siniestro__in=siniestros_year
+            ).count()
+            fallecidos = Victima.objects.filter(
+                condicion=Victima.Condicion.FALLECIDO,
+                siniestro__in=siniestros_year
+            ).count()
+            
+            result.append({
+                'ano': year,
+                'total_siniestros': item['total_siniestros'],
+                'total_lesionados': lesionados,
+                'total_fallecidos': fallecidos,
+            })
+        
+        return result
+
 
 class SiniestroManager(models.Manager):
     """Manager para Siniestro."""
@@ -144,6 +291,18 @@ class SiniestroManager(models.Manager):
 
     def get_por_dia_hora(self, year=None):
         return self.get_queryset().get_por_dia_hora(year)
+
+    def get_por_via(self, year=None):
+        return self.get_queryset().get_por_via(year)
+
+    def get_por_causa_probable(self, year=None):
+        return self.get_queryset().get_por_causa_probable(year)
+
+    def get_por_tipo_siniestro(self, year=None):
+        return self.get_queryset().get_por_tipo_siniestro(year)
+
+    def get_evolucion_anual(self):
+        return self.get_queryset().get_evolucion_anual()
 
  
 class VictimaQuerySet(models.QuerySet):
@@ -295,6 +454,29 @@ class VictimaQuerySet(models.QuerySet):
             for hour in range(24)
         ]
 
+    def get_evolucion_anual(self):
+        """Evolución anual de víctimas."""
+        years_data = (
+            self
+            .annotate(ano=TruncYear('siniestro__fecha_hora'))
+            .values('ano')
+            .annotate(total=Count('id'))
+            .order_by('ano')
+        )
+        
+        result = []
+        for item in years_data:
+            if not item['ano']:
+                continue
+            
+            year = item['ano'].year
+            result.append({
+                'ano': year,
+                'total': item['total'],
+            })
+        
+        return result
+
 
 class VictimaManager(models.Manager):
     """Manager para Victima."""
@@ -320,3 +502,6 @@ class VictimaManager(models.Manager):
 
     def get_por_dia_hora(self, year=None):
         return self.get_queryset().get_por_dia_hora(year)
+
+    def get_evolucion_anual(self):
+        return self.get_queryset().get_evolucion_anual()

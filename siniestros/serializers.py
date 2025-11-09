@@ -111,3 +111,45 @@ class EdadSexoRangeSerializer(serializers.Serializer):
     sexo = serializers.CharField()
     sexo_label = serializers.CharField()
     total = serializers.IntegerField()
+
+
+# --- Nuevos Serializers para estadísticas expandidas ---
+
+class ViaStatSerializer(serializers.Serializer):
+    """Serializer para estadísticas por vía."""
+    via = serializers.CharField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class CausaProbableStatSerializer(serializers.Serializer):
+    """Serializer para estadísticas por causa probable."""
+    id = serializers.IntegerField()
+    causa = serializers.CharField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class TipoSiniestroStatSerializer(serializers.Serializer):
+    """Serializer para estadísticas por tipo de siniestro."""
+    id = serializers.IntegerField()
+    tipo = serializers.CharField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class EvolucionAnualSiniestrosSerializer(serializers.Serializer):
+    """Serializer para evolución anual de siniestros."""
+    ano = serializers.IntegerField()
+    total_siniestros = serializers.IntegerField()
+    total_lesionados = serializers.IntegerField()
+    total_fallecidos = serializers.IntegerField()
+
+
+class EvolucionAnualVictimasSerializer(serializers.Serializer):
+    """Serializer para evolución anual de víctimas."""
+    ano = serializers.IntegerField()
+    total = serializers.IntegerField()
