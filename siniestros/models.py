@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from .managers import SiniestroManager, VictimaManager
 
 # --- 1. MODELOS DE OPCIONES (Para listas largas) ---
 # Implementamos "Borrado Lógico" (Soft Delete)
@@ -70,6 +71,8 @@ class Siniestro(models.Model):
         null=True, blank=True 
     )
 
+    objects = SiniestroManager()
+
     def __str__(self):
         return f"Siniestro el {self.fecha_hora.strftime('%Y-%m-%d')}"
 
@@ -103,6 +106,8 @@ class Victima(models.Model):
         SCOOTER = 'SCOOTER', 'Ocupante Scooter'
         OTRO = 'OTRO', 'Otro'
     actor_vial = models.CharField(max_length=20, choices=ActorVial.choices, default=ActorVial.OTRO)
+    
+    objects = VictimaManager()
     
     def __str__(self):
         return f"Víctima ({self.condicion}) del siniestro {self.siniestro.id}"

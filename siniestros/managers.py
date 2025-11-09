@@ -145,7 +145,7 @@ class SiniestroManager(models.Manager):
     def get_por_dia_hora(self, year=None):
         return self.get_queryset().get_por_dia_hora(year)
 
-
+ 
 class VictimaQuerySet(models.QuerySet):
     """QuerySet para Victima con métodos de agregación estadística."""
 
@@ -187,7 +187,7 @@ class VictimaQuerySet(models.QuerySet):
 
         return [
             {
-                'codigo': item['sexo'],
+                'sexo': item['sexo'],
                 'label': labels.get(item['sexo'], 'No definido'),
                 'total': item['total'],
             }
@@ -210,7 +210,7 @@ class VictimaQuerySet(models.QuerySet):
 
         return [
             {
-                'codigo': item['actor_vial'],
+                'actor_vial': item['actor_vial'],
                 'label': labels.get(item['actor_vial'], 'No definido'),
                 'total': item['total'],
             }
@@ -224,16 +224,26 @@ class VictimaQuerySet(models.QuerySet):
 
         year = self._get_year_param(year)
         ranges = [(0, 9), (10, 19), (20, 29), (30, 39), (40, 49), (50, 59), (60, 69), (70, 120)]
+        sexo_labels = dict(Victima.Sexo.choices)
 
         result = []
         for start, end in ranges:
             queryset = self.filter(siniestro__fecha_hora__year=year, edad__gte=start, edad__lte=end)
             hombre = queryset.filter(sexo=Victima.Sexo.HOMBRE).count()
             mujer = queryset.filter(sexo=Victima.Sexo.MUJER).count()
+            
+            # Formato: rango_edad, sexo, sexo_label, total (para cada sexo en el rango)
             result.append({
-                'rango': f'{start}-{end}',
-                'hombre': hombre,
-                'mujer': mujer,
+                'rango_edad': f'{start}-{end}',
+                'sexo': Victima.Sexo.HOMBRE,
+                'sexo_label': sexo_labels.get(Victima.Sexo.HOMBRE, 'No definido'),
+                'total': hombre,
+            })
+            result.append({
+                'rango_edad': f'{start}-{end}',
+                'sexo': Victima.Sexo.MUJER,
+                'sexo_label': sexo_labels.get(Victima.Sexo.MUJER, 'No definido'),
+                'total': mujer,
             })
         return result
 

@@ -9,10 +9,9 @@ router.register(r'victimas', VictimaViewSet, basename='victima')
 router.register(r'causas', CausaViewSet, basename='causa')
 router.register(r'tipos-siniestro', TipoSiniestroViewSet, basename='tipo-siniestro')
 
-
-
-
-# La forma como hice yo
+urlpatterns = [
+    path('', include(router.urls)),
+]
 # from django.urls import path
 # from . import views
 
