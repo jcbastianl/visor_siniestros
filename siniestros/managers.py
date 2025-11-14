@@ -64,14 +64,13 @@ class SiniestroQuerySet(models.QuerySet):
         )
         return self._fill_monthly_totals(queryset)
 
-    def get_por_severidad(self, year=None):
-        """Agrupa por severidad."""
+    def get_por_severidad(self):
+        """Agrupa por severidad (ya filtrado por el queryset)."""
         from .models import Siniestro
 
-        year = self._get_year_param(year)
         labels = dict(Siniestro.Severidad.choices)
         queryset = (
-            self.filter(fecha_hora__year=year)
+            self
             .values('grado_severidad')
             .annotate(total=Count('id'))
             .order_by('-total')
@@ -122,13 +121,12 @@ class SiniestroQuerySet(models.QuerySet):
             for hour in range(24)
         ]
 
-    def get_por_via(self, year=None):
-        """Agrupa por vía con conteo de siniestros, lesionados y fallecidos."""
+    def get_por_via(self):
+        """Agrupa por vía con conteo de siniestros, lesionados y fallecidos (ya filtrado)."""
         from .models import Victima
         
-        year = self._get_year_param(year)
         queryset = (
-            self.filter(fecha_hora__year=year)
+            self
             .values('via')
             .annotate(total_siniestros=Count('id'))
             .order_by('-total_siniestros')[:20]  # Top 20 vías
@@ -137,7 +135,7 @@ class SiniestroQuerySet(models.QuerySet):
         result = []
         for item in queryset:
             via = item['via']
-            siniestros_en_via = self.filter(fecha_hora__year=year, via=via)
+            siniestros_en_via = self.filter(via=via)
             lesionados = Victima.objects.filter(
                 condicion=Victima.Condicion.LESIONADO,
                 siniestro__in=siniestros_en_via
@@ -156,13 +154,12 @@ class SiniestroQuerySet(models.QuerySet):
         
         return result
 
-    def get_por_causa_probable(self, year=None):
-        """Agrupa por causa probable con totales."""
+    def get_por_causa_probable(self):
+        """Agrupa por causa probable con totales (ya filtrado)."""
         from .models import Victima
         
-        year = self._get_year_param(year)
         queryset = (
-            self.filter(fecha_hora__year=year)
+            self
             .values('causa_probable__nombre', 'causa_probable__id')
             .annotate(total_siniestros=Count('id'))
             .order_by('-total_siniestros')
@@ -172,7 +169,6 @@ class SiniestroQuerySet(models.QuerySet):
         for item in queryset:
             causa_nombre = item['causa_probable__nombre'] or 'Sin especificar'
             siniestros_causa = self.filter(
-                fecha_hora__year=year,
                 causa_probable__nombre=item['causa_probable__nombre']
             )
             lesionados = Victima.objects.filter(
@@ -194,13 +190,12 @@ class SiniestroQuerySet(models.QuerySet):
         
         return result
 
-    def get_por_tipo_siniestro(self, year=None):
-        """Agrupa por tipo de siniestro con totales."""
+    def get_por_tipo_siniestro(self):
+        """Agrupa por tipo de siniestro con totales (ya filtrado)."""
         from .models import Victima
         
-        year = self._get_year_param(year)
         queryset = (
-            self.filter(fecha_hora__year=year)
+            self
             .values('tipo_siniestro__nombre', 'tipo_siniestro__id')
             .annotate(total_siniestros=Count('id'))
             .order_by('-total_siniestros')
@@ -210,7 +205,6 @@ class SiniestroQuerySet(models.QuerySet):
         for item in queryset:
             tipo_nombre = item['tipo_siniestro__nombre'] or 'Sin especificar'
             siniestros_tipo = self.filter(
-                fecha_hora__year=year,
                 tipo_siniestro__nombre=item['tipo_siniestro__nombre']
             )
             lesionados = Victima.objects.filter(
@@ -283,8 +277,8 @@ class SiniestroManager(models.Manager):
     def get_por_mes(self, year=None):
         return self.get_queryset().get_por_mes(year)
 
-    def get_por_severidad(self, year=None):
-        return self.get_queryset().get_por_severidad(year)
+    def get_por_severidad(self):
+        return self.get_queryset().get_por_severidad()
 
     def get_por_hora(self, year=None):
         return self.get_queryset().get_por_hora(year)
@@ -292,14 +286,14 @@ class SiniestroManager(models.Manager):
     def get_por_dia_hora(self, year=None):
         return self.get_queryset().get_por_dia_hora(year)
 
-    def get_por_via(self, year=None):
-        return self.get_queryset().get_por_via(year)
+    def get_por_via(self):
+        return self.get_queryset().get_por_via()
 
-    def get_por_causa_probable(self, year=None):
-        return self.get_queryset().get_por_causa_probable(year)
+    def get_por_causa_probable(self):
+        return self.get_queryset().get_por_causa_probable()
 
-    def get_por_tipo_siniestro(self, year=None):
-        return self.get_queryset().get_por_tipo_siniestro(year)
+    def get_por_tipo_siniestro(self):
+        return self.get_queryset().get_por_tipo_siniestro()
 
     def get_evolucion_anual(self):
         return self.get_queryset().get_evolucion_anual()
@@ -331,14 +325,13 @@ class VictimaQuerySet(models.QuerySet):
             for h in range(24)
         ]
 
-    def get_por_sexo(self, year=None):
-        """Agrupa por sexo."""
+    def get_por_sexo(self):
+        """Agrupa por sexo (ya filtrado por el queryset)."""
         from .models import Victima
 
-        year = self._get_year_param(year)
         labels = dict(Victima.Sexo.choices)
         queryset = (
-            self.filter(siniestro__fecha_hora__year=year)
+            self
             .values('sexo')
             .annotate(total=Count('id'))
             .order_by('-total')
@@ -354,14 +347,13 @@ class VictimaQuerySet(models.QuerySet):
             if item['sexo'] is not None
         ]
 
-    def get_por_actor_vial(self, year=None):
-        """Agrupa por actor vial."""
+    def get_por_actor_vial(self):
+        """Agrupa por actor vial (ya filtrado por el queryset)."""
         from .models import Victima
 
-        year = self._get_year_param(year)
         labels = dict(Victima.ActorVial.choices)
         queryset = (
-            self.filter(siniestro__fecha_hora__year=year)
+            self
             .values('actor_vial')
             .annotate(total=Count('id'))
             .order_by('-total')
@@ -377,17 +369,16 @@ class VictimaQuerySet(models.QuerySet):
             if item['actor_vial'] is not None
         ]
 
-    def get_por_edad_sexo(self, year=None):
-        """Agrupa por rango de edad y sexo."""
+    def get_por_edad_sexo(self):
+        """Agrupa por rango de edad y sexo (ya filtrado por el queryset)."""
         from .models import Victima
 
-        year = self._get_year_param(year)
         ranges = [(0, 9), (10, 19), (20, 29), (30, 39), (40, 49), (50, 59), (60, 69), (70, 120)]
         sexo_labels = dict(Victima.Sexo.choices)
 
         result = []
         for start, end in ranges:
-            queryset = self.filter(siniestro__fecha_hora__year=year, edad__gte=start, edad__lte=end)
+            queryset = self.filter(edad__gte=start, edad__lte=end)
             hombre = queryset.filter(sexo=Victima.Sexo.HOMBRE).count()
             mujer = queryset.filter(sexo=Victima.Sexo.MUJER).count()
             
@@ -485,14 +476,14 @@ class VictimaManager(models.Manager):
         return VictimaQuerySet(self.model, using=self._db)
 
     # Delegated methods for convenience
-    def get_por_sexo(self, year=None):
-        return self.get_queryset().get_por_sexo(year)
+    def get_por_sexo(self):
+        return self.get_queryset().get_por_sexo()
 
-    def get_por_actor_vial(self, year=None):
-        return self.get_queryset().get_por_actor_vial(year)
+    def get_por_actor_vial(self):
+        return self.get_queryset().get_por_actor_vial()
 
-    def get_por_edad_sexo(self, year=None):
-        return self.get_queryset().get_por_edad_sexo(year)
+    def get_por_edad_sexo(self):
+        return self.get_queryset().get_por_edad_sexo()
 
     def get_por_mes(self, year=None):
         return self.get_queryset().get_por_mes(year)

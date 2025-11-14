@@ -135,13 +135,7 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     def por_via(self, request):
         """Siniestros por vía (Top 20)."""
         queryset = self.filter_queryset(self.get_queryset())
-        year = request.query_params.get('year')
-        if year:
-            try:
-                year = int(year)
-            except (ValueError, TypeError):
-                year = None
-        stats = queryset.get_por_via(year=year)
+        stats = queryset.get_por_via()
         serializer = ViaStatSerializer(stats, many=True)
         return Response(serializer.data)
 
@@ -155,13 +149,7 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     def por_causa_probable(self, request):
         """Siniestros por causa probable."""
         queryset = self.filter_queryset(self.get_queryset())
-        year = request.query_params.get('year')
-        if year:
-            try:
-                year = int(year)
-            except (ValueError, TypeError):
-                year = None
-        stats = queryset.get_por_causa_probable(year=year)
+        stats = queryset.get_por_causa_probable()
         serializer = CausaProbableStatSerializer(stats, many=True)
         return Response(serializer.data)
 
@@ -175,13 +163,7 @@ class SiniestroViewSet(ReadOnlyModelViewSet):
     def por_tipo_siniestro(self, request):
         """Siniestros por tipo de siniestro."""
         queryset = self.filter_queryset(self.get_queryset())
-        year = request.query_params.get('year')
-        if year:
-            try:
-                year = int(year)
-            except (ValueError, TypeError):
-                year = None
-        stats = queryset.get_por_tipo_siniestro(year=year)
+        stats = queryset.get_por_tipo_siniestro()
         serializer = TipoSiniestroStatSerializer(stats, many=True)
         return Response(serializer.data)
 
@@ -217,13 +199,7 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     def por_sexo(self, request):
         """Víctimas por sexo."""
         queryset = self.filter_queryset(self.get_queryset())
-        year = request.query_params.get('year')
-        if year:
-            try:
-                year = int(year)
-            except (ValueError, TypeError):
-                year = None
-        stats = queryset.get_por_sexo(year=year)
+        stats = queryset.get_por_sexo()
         serializer = SexoStatSerializer(stats, many=True)
         return Response(serializer.data)
 
@@ -237,13 +213,7 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     def por_actor_vial(self, request):
         """Víctimas por actor vial (peatón, conductor, pasajero)."""
         queryset = self.filter_queryset(self.get_queryset())
-        year = request.query_params.get('year')
-        if year:
-            try:
-                year = int(year)
-            except (ValueError, TypeError):
-                year = None
-        stats = queryset.get_por_actor_vial(year=year)
+        stats = queryset.get_por_actor_vial()
         serializer = ActorVialStatSerializer(stats, many=True)
         return Response(serializer.data)
 
@@ -257,13 +227,7 @@ class VictimaViewSet(ReadOnlyModelViewSet):
     def por_edad_sexo(self, request):
         """Víctimas por rango de edad y sexo."""
         queryset = self.filter_queryset(self.get_queryset())
-        year = request.query_params.get('year')
-        if year:
-            try:
-                year = int(year)
-            except (ValueError, TypeError):
-                year = None
-        stats = queryset.get_por_edad_sexo(year=year)
+        stats = queryset.get_por_edad_sexo()
         serializer = EdadSexoRangeSerializer(stats, many=True)
         return Response(serializer.data)
 

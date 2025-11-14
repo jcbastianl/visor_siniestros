@@ -51,10 +51,9 @@ HOUR_CHOICES = [
 ]
 
 SEVERITY_CHOICES = [
-    ('LEVE', 'Leve'),
-    ('MODERADO', 'Moderado'),
-    ('GRAVE', 'Grave'),
-    ('CRITICO', 'Crítico'),
+    ('SOLO_DANOS', 'Solo con daños materiales'),
+    ('CON_LESIONADOS', 'Con lesionados'),
+    ('CON_FALLECIDOS', 'Con fallecidos en sitio'),
 ]
 
 SEXO_CHOICES = [
