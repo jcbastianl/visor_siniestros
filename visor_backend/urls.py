@@ -28,4 +28,5 @@ urlpatterns = [
     
     # API Routes
     path('api/', include('siniestros.urls')),
+    path('api/', include('transporte.urls')),
 ]

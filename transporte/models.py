@@ -1,0 +1,23 @@
+from django.db import models
+
+
+class LineaBus(models.Model):
+    """Modelo para gestionar líneas de autobús con coordenadas de ruta."""
+    nombre = models.CharField(max_length=100, unique=True, help_text="Nombre de la línea (ej. L10)")
+    color = models.CharField(max_length=7, help_text="Color en formato hexadecimal (ej. #FF0000)")
+    coordenadas = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Array de coordenadas [[lat, lng], [lat, lng], ...]"
+    )
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Línea de Bus"
+        verbose_name_plural = "Líneas de Bus"
+        ordering = ['nombre']
+    
+    def __str__(self):
+        return self.nombre
