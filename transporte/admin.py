@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import LineaBus
+from .models import LineaBus, Ciclovia
 
 
 @admin.register(LineaBus)
@@ -26,3 +26,27 @@ class LineaBusAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(Ciclovia)
+class CicloviaAdmin(admin.ModelAdmin):
+    """Configuración admin para el modelo Ciclovia."""
+    list_display = ('nombre', 'longitud_km', 'tipo_separacion', 'activo', 'fecha_creacion')
+    list_filter = ('activo', 'tipo_separacion', 'fecha_creacion')
+    search_fields = ('nombre',)
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+    
+    fieldsets = (
+        ('Información General', {
+            'fields': ('nombre', 'tipo_separacion', 'longitud_km', 'activo')
+        }),
+        ('Geometría', {
+            'fields': ('geom',),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('fecha_creacion', 'fecha_actualizacion'),
+            'classes': ('collapse',)
+        }),
+    )
+

@@ -25,3 +25,47 @@ class LineaBus(models.Model):
     
     def __str__(self):
         return self.nombre
+
+
+class Ciclovia(models.Model):
+    """Modelo para gestionar ciclovías con geometría de ruta."""
+    TIPO_SEPARACION_CHOICES = [
+        ('Pintada', 'Ciclovía Pintada'),
+        ('Confinada', 'Ciclovía Confinada'),
+        ('Mixta', 'Ciclovía Mixta'),
+    ]
+    
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Nombre de la ciclovía o segmento"
+    )
+    geom = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Geometría GeoJSON LineString de la ciclovía. Formato [lng, lat]"
+    )
+    longitud_km = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text="Longitud total en kilómetros"
+    )
+    tipo_separacion = models.CharField(
+        max_length=50,
+        choices=TIPO_SEPARACION_CHOICES,
+        default='Pintada',
+        help_text="Tipo de separación: 'Pintada', 'Confinada', 'Mixta'"
+    )
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Ciclovía"
+        verbose_name_plural = "Ciclovías"
+        ordering = ['nombre']
+    
+    def __str__(self):
+        return self.nombre
+
