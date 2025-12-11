@@ -4,8 +4,8 @@ from .models import LineaBus
 
 
 class GeoJSONWidget(forms.Textarea):
-    """Widget personalizado para editar GeoJSON en el admin."""
-    pass
+    """Widget personalizado para editar GeoJSON con mapa interactivo."""
+    template_name = 'widgets/geojson_widget.html'
 
 
 class LineaBusForm(forms.ModelForm):
@@ -17,7 +17,6 @@ class LineaBusForm(forms.ModelForm):
             'geom': GeoJSONWidget(attrs={
                 'class': 'vLargeTextField',
                 'placeholder': '{"type": "LineString", "coordinates": [[lng, lat], [lng, lat], ...]}',
-                'style': 'width: 100%; height: 300px; font-family: monospace; font-size: 12px; background-color: #f5f5f5;'
             })
         }
 
