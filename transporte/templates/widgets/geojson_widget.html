@@ -1,0 +1,30 @@
+{% load static %}
+
+<div class="geojson-widget-wrapper">
+    <textarea 
+        name="{{ widget.name }}"
+        {% include "django/forms/widgets/attrs.html" with widget=widget %}
+        placeholder="{{ widget.attrs.placeholder }}"></textarea>
+    <p style="margin-top: 10px; font-size: 12px; color: #666;">
+        <strong>Formato GeoJSON LineString:</strong><br>
+        {"type": "LineString", "coordinates": [[lng, lat], [lng, lat], ...]}
+    </p>
+</div>
+
+<style>
+    .geojson-widget-wrapper textarea {
+        width: 100%;
+        font-family: monospace;
+        font-size: 12px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f5f5f5;
+    }
+    
+    .geojson-widget-wrapper textarea:focus {
+        background-color: #fff;
+        border-color: #4CAF50;
+        outline: none;
+    }
+</style>

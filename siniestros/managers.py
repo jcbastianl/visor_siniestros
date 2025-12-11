@@ -13,10 +13,6 @@ from datetime import datetime
 class SiniestroQuerySet(models.QuerySet):
     """QuerySet para Siniestro con métodos de agregación estadística."""
 
-    def _get_year_param(self, year):
-        """Helper para obtener año válido."""
-        return year or datetime.now().year
-
     def _fill_monthly_totals(self, queryset):
         """Helper para llenar 12 meses con datos o ceros."""
         monthly_totals = {month: 0 for month in range(1, 13)}
@@ -52,11 +48,10 @@ class SiniestroQuerySet(models.QuerySet):
             ).count(),
         }
 
-    def get_por_mes(self, year=None):
-        """Agrupa por mes."""
-        year = self._get_year_param(year)
+    def get_por_mes(self):
+        """Agrupa por mes (respeta el queryset filtrado de la vista)."""
         queryset = (
-            self.filter(fecha_hora__year=year)
+            self
             .annotate(mes=TruncMonth('fecha_hora'))
             .values('mes')
             .annotate(total=Count('id'))
@@ -85,11 +80,10 @@ class SiniestroQuerySet(models.QuerySet):
             for item in queryset
         ]
 
-    def get_por_hora(self, year=None):
-        """Agrupa por hora del día."""
-        year = self._get_year_param(year)
+    def get_por_hora(self):
+        """Agrupa por hora del día (respeta el queryset filtrado de la vista)."""
         queryset = (
-            self.filter(fecha_hora__year=year)
+            self
             .annotate(hora=ExtractHour('fecha_hora'))
             .values('hora')
             .annotate(total=Count('id'))
@@ -97,13 +91,12 @@ class SiniestroQuerySet(models.QuerySet):
         )
         return self._fill_hourly_totals(queryset)
 
-    def get_por_dia_hora(self, year=None):
-        """Agrupa por día de semana (1-7) y hora (0-23)."""
-        year = self._get_year_param(year)
+    def get_por_dia_hora(self):
+        """Agrupa por día de semana (1-7) y hora (0-23) (respeta el queryset filtrado)."""
         matrix = {day: {hour: 0 for hour in range(24)} for day in range(1, 8)}
 
         for item in (
-            self.filter(fecha_hora__year=year)
+            self
             .annotate(
                 dia_semana=ExtractWeekDay('fecha_hora'),
                 hora_dia=ExtractHour('fecha_hora'),
@@ -274,17 +267,17 @@ class SiniestroManager(models.Manager):
     def get_kpi_stats(self):
         return self.get_queryset().get_kpi_stats()
 
-    def get_por_mes(self, year=None):
-        return self.get_queryset().get_por_mes(year)
+    def get_por_mes(self):
+        return self.get_queryset().get_por_mes()
 
     def get_por_severidad(self):
         return self.get_queryset().get_por_severidad()
 
-    def get_por_hora(self, year=None):
-        return self.get_queryset().get_por_hora(year)
+    def get_por_hora(self):
+        return self.get_queryset().get_por_hora()
 
-    def get_por_dia_hora(self, year=None):
-        return self.get_queryset().get_por_dia_hora(year)
+    def get_por_dia_hora(self):
+        return self.get_queryset().get_por_dia_hora()
 
     def get_por_via(self):
         return self.get_queryset().get_por_via()
@@ -301,10 +294,6 @@ class SiniestroManager(models.Manager):
  
 class VictimaQuerySet(models.QuerySet):
     """QuerySet para Victima con métodos de agregación estadística."""
-
-    def _get_year_param(self, year):
-        """Helper para obtener año válido."""
-        return year or datetime.now().year
 
     def _fill_monthly_totals(self, queryset):
         """Helper para llenar 12 meses."""
@@ -397,11 +386,10 @@ class VictimaQuerySet(models.QuerySet):
             })
         return result
 
-    def get_por_mes(self, year=None):
-        """Agrupa por mes."""
-        year = self._get_year_param(year)
+    def get_por_mes(self):
+        """Agrupa por mes (respeta el queryset filtrado de la vista)."""
         queryset = (
-            self.filter(siniestro__fecha_hora__year=year)
+            self
             .annotate(mes=TruncMonth('siniestro__fecha_hora'))
             .values('mes')
             .annotate(total=Count('id'))
@@ -409,11 +397,10 @@ class VictimaQuerySet(models.QuerySet):
         )
         return self._fill_monthly_totals(queryset)
 
-    def get_por_hora(self, year=None):
-        """Agrupa por hora del día."""
-        year = self._get_year_param(year)
+    def get_por_hora(self):
+        """Agrupa por hora del día (respeta el queryset filtrado de la vista)."""
         queryset = (
-            self.filter(siniestro__fecha_hora__year=year)
+            self
             .annotate(hora=ExtractHour('siniestro__fecha_hora'))
             .values('hora')
             .annotate(total=Count('id'))
@@ -421,13 +408,12 @@ class VictimaQuerySet(models.QuerySet):
         )
         return self._fill_hourly_totals(queryset)
 
-    def get_por_dia_hora(self, year=None):
-        """Agrupa por día de semana y hora."""
-        year = self._get_year_param(year)
+    def get_por_dia_hora(self):
+        """Agrupa por día de semana y hora (respeta el queryset filtrado de la vista)."""
         matrix = {day: {hour: 0 for hour in range(24)} for day in range(1, 8)}
 
         for item in (
-            self.filter(siniestro__fecha_hora__year=year)
+            self
             .annotate(
                 dia_semana=ExtractWeekDay('siniestro__fecha_hora'),
                 hora_dia=ExtractHour('siniestro__fecha_hora'),
@@ -485,14 +471,14 @@ class VictimaManager(models.Manager):
     def get_por_edad_sexo(self):
         return self.get_queryset().get_por_edad_sexo()
 
-    def get_por_mes(self, year=None):
-        return self.get_queryset().get_por_mes(year)
+    def get_por_mes(self):
+        return self.get_queryset().get_por_mes()
 
-    def get_por_hora(self, year=None):
-        return self.get_queryset().get_por_hora(year)
+    def get_por_hora(self):
+        return self.get_queryset().get_por_hora()
 
-    def get_por_dia_hora(self, year=None):
-        return self.get_queryset().get_por_dia_hora(year)
+    def get_por_dia_hora(self):
+        return self.get_queryset().get_por_dia_hora()
 
     def get_evolucion_anual(self):
         return self.get_queryset().get_evolucion_anual()

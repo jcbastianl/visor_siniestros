@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 """
-Script para cargar muchos datos de prueba en la base de datos.
+Script para cargar DATOS MASIVOS de prueba en la base de datos.
 Genera siniestros y víctimas realistas para visualización en el frontend.
 
-Los datos están centrados en Loja, Ecuador (Latitud: -4.007, Longitud: -79.201)
-con nombres de vías reales de la ciudad.
+Rango: 2020 a 2025
+Volumen: ~4,000 por año (Total ~24,000) para asegurar densidad en filtros.
+Ubicación: Loja, Ecuador (Lat: -4.007, Lon: -79.201)
 
 Uso:
     python scripts/load_demo_data.py
@@ -28,7 +29,7 @@ from siniestros.models import TipoSiniestro, Causa, Siniestro, Victima
 
 
 def clear_data():
-    """Elimina todos los datos existentes (opcional)."""
+    """Elimina todos los datos existentes."""
     print("🗑️  Limpiando datos existentes...")
     Victima.objects.all().delete()
     Siniestro.objects.all().delete()
@@ -41,13 +42,8 @@ def create_base_data():
     """Crea los datos base (tipos y causas)."""
     print("\n📋 Creando tipos de siniestro...")
     tipos = [
-        "Choque Vehicular",
-        "Caída",
-        "Accidente Laboral",
-        "Atropellamiento",
-        "Volcamiento",
-        "Incendio",
-        "Colisión Múltiple",
+        "Choque Vehicular", "Caída", "Accidente Laboral", "Atropellamiento",
+        "Volcamiento", "Incendio", "Colisión Múltiple",
     ]
     
     tipo_objs = []
@@ -57,23 +53,13 @@ def create_base_data():
             defaults={'activo': True}
         )
         tipo_objs.append(obj)
-        status = "✓" if created else "∃"
-        print(f"  {status} {tipo_nombre}")
     
-    print("\n📋 Creando causas probables...")
+    print("📋 Creando causas probables...")
     causas = [
-        "Exceso de velocidad",
-        "Imprudencia del conductor",
-        "Distracción (celular/radio)",
-        "Vía resbaladiza o mojada",
-        "Falla mecánica",
-        "Visibilidad reducida",
-        "Inobservancia de señales",
-        "Estado de embriaguez",
-        "Fatiga del conductor",
-        "Mal estado de la vía",
-        "Equipo de seguridad deficiente",
-        "Factores externos",
+        "Exceso de velocidad", "Imprudencia del conductor", "Distracción (celular/radio)",
+        "Vía resbaladiza o mojada", "Falla mecánica", "Visibilidad reducida",
+        "Inobservancia de señales", "Estado de embriaguez", "Fatiga del conductor",
+        "Mal estado de la vía", "Equipo de seguridad deficiente", "Factores externos",
     ]
     
     causa_objs = []
@@ -83,15 +69,18 @@ def create_base_data():
             defaults={'activo': True}
         )
         causa_objs.append(obj)
-        status = "✓" if created else "∃"
-        print(f"  {status} {causa_nombre}")
     
     return tipo_objs, causa_objs
 
 
-def create_siniestros(tipo_objs, causa_objs, num_siniestros=500):
-    """Crea siniestros distribuidos en los últimos 2 años."""
-    print(f"\n🚗 Creando {num_siniestros} siniestros...")
+def create_siniestros(tipo_objs, causa_objs, records_per_year=4000):
+    """
+    Crea siniestros distribuidos desde 2020 hasta 2025.
+    """
+    years = [2020, 2021, 2022, 2023, 2024, 2025]
+    total_target = len(years) * records_per_year
+    
+    print(f"\n🚗 Creando {total_target:,} siniestros ({records_per_year}/año)...")
     
     severidades = [
         Siniestro.Severidad.CON_FALLECIDOS,
@@ -99,204 +88,164 @@ def create_siniestros(tipo_objs, causa_objs, num_siniestros=500):
         Siniestro.Severidad.SOLO_DANOS,
     ]
     
-    # 🗺️  Vías principales y reales de Loja, Ecuador
+    # Vías de Loja
     vias = [
-        # Avenidas principales
-        "Av. Orillas del Zamora",
-        "Av. Cuxibamba",
-        "Av. 8 de Diciembre",
-        "Av. Manuel Agustín Aguirre",
-        "Av. Universitaria",
-        "Av. Reinaldo Espinosa",
-        "Av. Pio Jaramillo",
-        "Av. Gran Colombia",
-        "Av. Metropolitana",
-        "Av. Rosa Hermosa",
-        
-        # Calles principales del centro
-        "Calle Bolívar",
-        "Calle Miguel Riofrío",
-        "Calle Ramón Borrero",
-        "Calle 10 de Agosto",
-        "Calle 18 de Noviembre",
-        "Calle Sucre",
-        "Calle Quito",
-        "Calle Rocafuerte",
-        "Calle Saraguro",
-        
-        # Otras vías importantes
-        "Vía Loja - Zamora",
-        "Vía Loja - Catamayo",
-        "Ruta 35",
-        "Ruta 37",
-        "Calle Montúfar",
-        "Calle Mercadillo",
-        "Av. Isidro Ayora",
-        "Calle Colón",
-        "Calle Imbabura",
-        "Calle Azogues",
+        "Av. Orillas del Zamora", "Av. Cuxibamba", "Av. 8 de Diciembre",
+        "Av. Manuel Agustín Aguirre", "Av. Universitaria", "Av. Reinaldo Espinosa",
+        "Av. Pio Jaramillo", "Av. Gran Colombia", "Av. Metropolitana",
+        "Av. Rosa Hermosa", "Calle Bolívar", "Calle Miguel Riofrío",
+        "Calle Ramón Borrero", "Calle 10 de Agosto", "Calle 18 de Noviembre",
+        "Calle Sucre", "Calle Quito", "Calle Rocafuerte", "Calle Saraguro",
+        "Vía Loja - Zamora", "Vía Loja - Catamayo", "Ruta 35",
+        "Calle Montúfar", "Calle Mercadillo", "Av. Isidro Ayora",
+        "Calle Colón", "Calle Imbabura", "Calle Azogues",
     ]
     
-    siniestros = []
-    start_date = timezone.now() - timedelta(days=730)  # 2 años atrás
-    
-    # Centro de Loja, Ecuador (Latitud: -4.007, Longitud: -79.201)
+    # Centro de Loja
     LOJA_LAT = -4.007
     LOJA_LON = -79.201
+    LAT_VARIATION = 0.030  # Un poco más disperso para cubrir la ciudad
+    LON_VARIATION = 0.030
     
-    # Variación aleatoria para dispersar los siniestros en el área urbana
-    # ~0.03 grados ≈ 3.3 km (radio de cobertura aproximado)
-    LAT_VARIATION = 0.025
-    LON_VARIATION = 0.025
-    
-    for i in range(num_siniestros):
-        # Distribuir aleatoriamente en el tiempo
-        random_days = randint(0, 729)
-        fecha_hora = start_date + timedelta(
-            days=random_days,
-            hours=randint(0, 23),
-            minutes=randint(0, 59)
-        )
+    siniestros_batch = []
+    count = 0
+
+    for year in years:
+        print(f"   Generando datos para el año {year}...")
         
-        siniestro = Siniestro(
-            fecha_hora=fecha_hora,
-            # Coordenadas centradas en Loja con variación aleatoria
-            latitud=LOJA_LAT + uniform(-LAT_VARIATION, LAT_VARIATION),
-            longitud=LOJA_LON + uniform(-LON_VARIATION, LON_VARIATION),
-            via=choice(vias),
-            grado_severidad=choice(severidades),
-            tipo_siniestro=choice(tipo_objs),
-            causa_probable=choice(causa_objs),
-        )
-        siniestros.append(siniestro)
-    
-    # Bulk create para velocidad
-    Siniestro.objects.bulk_create(siniestros, batch_size=100)
-    print(f"  ✓ {num_siniestros} siniestros creados")
-    
+        # Definir inicio y fin del año
+        start_date = datetime(year, 1, 1, tzinfo=timezone.get_current_timezone())
+        end_date = datetime(year, 12, 31, 23, 59, tzinfo=timezone.get_current_timezone())
+        
+        # Si es el año actual (2025), limitar a la fecha de hoy para no tener datos en el futuro
+        if year == datetime.now().year:
+            end_date = timezone.now()
+            
+        delta_seconds = int((end_date - start_date).total_seconds())
+
+        for _ in range(records_per_year):
+            # Fecha aleatoria dentro del año
+            random_second = randint(0, delta_seconds)
+            fecha_hora = start_date + timedelta(seconds=random_second)
+            
+            siniestro = Siniestro(
+                fecha_hora=fecha_hora,
+                latitud=LOJA_LAT + uniform(-LAT_VARIATION, LAT_VARIATION),
+                longitud=LOJA_LON + uniform(-LON_VARIATION, LON_VARIATION),
+                via=choice(vias),
+                grado_severidad=choice(severidades),
+                tipo_siniestro=choice(tipo_objs),
+                causa_probable=choice(causa_objs),
+            )
+            siniestros_batch.append(siniestro)
+            count += 1
+            
+            # Guardar en lotes de 2000 para no saturar memoria
+            if len(siniestros_batch) >= 2000:
+                Siniestro.objects.bulk_create(siniestros_batch)
+                siniestros_batch = []
+                print(f"     -> Guardados {count} siniestros...")
+
+    # Guardar los restantes
+    if siniestros_batch:
+        Siniestro.objects.bulk_create(siniestros_batch)
+        
+    print(f"  ✓ Total creado: {Siniestro.objects.count():,} siniestros")
     return Siniestro.objects.all()
 
 
-def create_victimas(siniestros):
-    """Crea víctimas para los siniestros."""
-    print("\n👥 Creando víctimas...")
+def create_victimas_bulk(total_siniestros):
+    """Crea víctimas en masa de manera eficiente."""
+    print("\n👥 Creando víctimas (esto puede tardar un poco)...")
     
-    victimas = []
-    victima_count = 0
+    # Usamos un iterador para no cargar los 24k objetos en RAM
+    # Solo necesitamos ID y Severidad
+    siniestros_iterator = Siniestro.objects.values_list('id', 'grado_severidad').iterator(chunk_size=2000)
     
-    for siniestro in siniestros:
-        # Algunas estadísticas realistas
-        severidad = siniestro.grado_severidad
+    victimas_batch = []
+    total_victimas = 0
+    
+    for s_id, severidad in siniestros_iterator:
+        fallecidos = 0
+        lesionados = 0
         
         if severidad == Siniestro.Severidad.CON_FALLECIDOS:
-            # 1-3 víctimas, mayormente fallecidos
-            num_victimas = randint(1, 3)
-            fallecidos = randint(1, num_victimas)
-            lesionados = max(0, num_victimas - fallecidos)
+            fallecidos = randint(1, 2)
+            lesionados = randint(0, 2)
         elif severidad == Siniestro.Severidad.CON_LESIONADOS:
-            # 1-4 víctimas, mayormente lesionados
-            num_victimas = randint(1, 4)
-            lesionados = randint(1, num_victimas)
-            fallecidos = 0
-        else:  # SOLO_DANOS
-            # 0-2 víctimas
-            num_victimas = randint(0, 2)
-            lesionados = num_victimas
-            fallecidos = 0
+            lesionados = randint(1, 3)
+        else: # SOLO_DANOS
+            # 10% probabilidad de herido leve
+            if randint(1, 10) == 1:
+                lesionados = 1
         
-        # Crear fallecidos
+        # Generar objetos víctima
         for _ in range(fallecidos):
-            victima = Victima(
-                siniestro=siniestro,
+            victimas_batch.append(Victima(
+                siniestro_id=s_id,
                 edad=randint(18, 85),
                 condicion=Victima.Condicion.FALLECIDO,
                 sexo=choice([Victima.Sexo.HOMBRE, Victima.Sexo.MUJER, Victima.Sexo.NO_REGISTRA]),
-                actor_vial=choice([
-                    Victima.ActorVial.PEATON,
-                    Victima.ActorVial.MOTOCICLETA,
-                    Victima.ActorVial.VEH_LIVIANO,
-                    Victima.ActorVial.CICLISTA,
-                ])
-            )
-            victimas.append(victima)
-            victima_count += 1
-        
-        # Crear lesionados
+                actor_vial=choice(Victima.ActorVial.values)
+            ))
+            
         for _ in range(lesionados):
-            victima = Victima(
-                siniestro=siniestro,
+            victimas_batch.append(Victima(
+                siniestro_id=s_id,
                 edad=randint(5, 80),
                 condicion=Victima.Condicion.LESIONADO,
                 sexo=choice([Victima.Sexo.HOMBRE, Victima.Sexo.MUJER, Victima.Sexo.NO_REGISTRA]),
-                actor_vial=choice([
-                    Victima.ActorVial.PEATON,
-                    Victima.ActorVial.MOTOCICLETA,
-                    Victima.ActorVial.VEH_LIVIANO,
-                    Victima.ActorVial.CICLISTA,
-                    Victima.ActorVial.SCOOTER,
-                    Victima.ActorVial.OTRO,
-                ])
-            )
-            victimas.append(victima)
-            victima_count += 1
-    
-    # Bulk create
-    if victimas:
-        Victima.objects.bulk_create(victimas, batch_size=100)
-        print(f"  ✓ {victima_count} víctimas creadas")
-    else:
-        print("  ✓ Sin víctimas (todos SOLO_DANOS)")
+                actor_vial=choice(Victima.ActorVial.values)
+            ))
+            
+        # Guardar en lotes
+        if len(victimas_batch) >= 3000:
+            Victima.objects.bulk_create(victimas_batch)
+            total_victimas += len(victimas_batch)
+            print(f"     -> Guardadas {total_victimas} víctimas...")
+            victimas_batch = []
+            
+    # Guardar restantes
+    if victimas_batch:
+        Victima.objects.bulk_create(victimas_batch)
+        total_victimas += len(victimas_batch)
+
+    print(f"  ✓ Total creado: {total_victimas:,} víctimas")
 
 
 def print_summary():
-    """Imprime un resumen de los datos cargados."""
+    """Imprime un resumen."""
     print("\n" + "=" * 60)
-    print("📊 RESUMEN DE DATOS CARGADOS")
+    print("📊 RESUMEN DE DATOS CARGADOS (2020-2025)")
     print("=" * 60)
     
-    total_siniestros = Siniestro.objects.count()
-    total_victimas = Victima.objects.count()
-    total_fallecidos = Victima.objects.filter(condicion=Victima.Condicion.FALLECIDO).count()
-    total_lesionados = Victima.objects.filter(condicion=Victima.Condicion.LESIONADO).count()
-    
-    print(f"✓ Siniestros:        {total_siniestros:>6}")
-    print(f"✓ Víctimas totales:  {total_victimas:>6}")
-    print(f"  - Fallecidos:      {total_fallecidos:>6}")
-    print(f"  - Lesionados:      {total_lesionados:>6}")
-    print(f"✓ Tipos siniestro:   {TipoSiniestro.objects.count():>6}")
-    print(f"✓ Causas probables:  {Causa.objects.count():>6}")
+    print(f"✓ Siniestros Totales: {Siniestro.objects.count():,}")
+    print(f"✓ Víctimas Totales:   {Victima.objects.count():,}")
     print("=" * 60)
 
 
 def main():
-    """Función principal."""
-    print("🚀 Iniciando carga de datos de prueba...\n")
-    
+    print("🚀 Iniciando carga masiva de datos (2020-2025)...\n")
     try:
-        # Preguntar si limpiar datos existentes
-        response = input("¿Deseas limpiar los datos existentes? (s/n): ").lower().strip()
+        # Preguntar si limpiar
+        response = input("¿Borrar datos anteriores? (s/n): ").lower().strip()
         if response == 's':
             clear_data()
         
-        # Crear datos base
         tipo_objs, causa_objs = create_base_data()
         
-        # Crear siniestros
-        siniestros = create_siniestros(tipo_objs, causa_objs, num_siniestros=500)
+        # Crear ~24,000 siniestros (4000 por año x 6 años)
+        create_siniestros(tipo_objs, causa_objs, records_per_year=4000)
         
-        # Crear víctimas
-        create_victimas(siniestros)
+        # Crear víctimas asociadas
+        create_victimas_bulk(None)
         
-        # Mostrar resumen
         print_summary()
-        
-        print("\n✨ ¡Datos cargados exitosamente!")
-        print("Ahora puedes acceder a http://localhost:5173 para visualizar los datos")
+        print("\n✨ ¡Proceso finalizado! Ahora tienes datos densos para todos los años.")
         
     except Exception as e:
         print(f"\n❌ Error: {e}", file=sys.stderr)
         sys.exit(1)
-
 
 if __name__ == '__main__':
     main()

@@ -7,5 +7,5 @@ class LineaBusSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = LineaBus
-        fields = ['id', 'nombre', 'color', 'coordenadas', 'activo', 'fecha_creacion', 'fecha_actualizacion']
+        fields = ['id', 'nombre', 'color', 'geom', 'activo', 'fecha_creacion', 'fecha_actualizacion', 'origen', 'destino', 'descripcion', 'tarifa_base']
         read_only_fields = ['id', 'fecha_creacion', 'fecha_actualizacion']
