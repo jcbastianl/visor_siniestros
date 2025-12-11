@@ -40,10 +40,15 @@ class Ciclovia(models.Model):
         unique=True,
         help_text="Nombre de la ciclovía o segmento"
     )
+    color = models.CharField(
+        max_length=7,
+        default="#008000",
+        help_text="Color en formato hexadecimal (ej. #008000)"
+    )
     geom = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Geometría GeoJSON LineString de la ciclovía. Formato [lng, lat]"
+        help_text="Geometría GeoJSON LineString de la ruta. Formato [lng, lat]"
     )
     longitud_km = models.DecimalField(
         max_digits=5,

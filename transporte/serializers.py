@@ -16,6 +16,6 @@ class CicloviaSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Ciclovia
-        fields = ['id', 'nombre', 'geom', 'longitud_km', 'tipo_separacion', 'activo', 'fecha_creacion', 'fecha_actualizacion']
+        fields = ['id', 'nombre', 'color', 'geom', 'longitud_km', 'tipo_separacion', 'activo', 'fecha_creacion', 'fecha_actualizacion']
         read_only_fields = ['id', 'fecha_creacion', 'fecha_actualizacion']
 
