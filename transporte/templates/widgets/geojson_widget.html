@@ -1,58 +1,301 @@
 {% load static %}
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
-<div class="geojson-widget-wrapper">
-    <div id="geom-map" style="width: 100%; height: 400px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;"></div>
-    
-    <div style="background-color: #f5f5f5; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: none;" id="instructions">
-        <strong>Instrucciones:</strong>
-        <ul style="margin: 5px 0; padding-left: 20px; font-size: 12px;">
-            <li>Click en "Dibujar Ruta" para comenzar</li>
-            <li>Haz click en el mapa para añadir puntos a la ruta</li>
-            <li>Click en "Guardar Ruta" cuando hayas terminado</li>
-            <li>Usa "Limpiar" para empezar de nuevo</li>
-        </ul>
-    </div>
-    
-    <textarea 
-        name="{{ widget.name }}"
-        {% include "django/forms/widgets/attrs.html" with widget=widget %}
-        placeholder="{{ widget.attrs.placeholder }}"
-        style="width: 100%; height: 200px; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background-color: #f5f5f5;"></textarea>
-    
-    <p style="margin-top: 10px; font-size: 11px; color: #666;">
-        <strong>Formato GeoJSON LineString:</strong><br>
-        {"type": "LineString", "coordinates": [[lng, lat], [lng, lat], ...]}
-    </p>
-</div>
-
-<script src="{% static 'js/geom_widget.js' %}"></script>
-
 <style>
     .geojson-widget-wrapper {
-        padding: 10px;
+        padding: 15px;
         background-color: #fafafa;
         border: 1px solid #e0e0e0;
         border-radius: 4px;
     }
-    
-    .geojson-widget-wrapper textarea {
+
+    .geojson-map-container {
         width: 100%;
-        font-family: monospace;
+        height: 400px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        position: relative;
+    }
+
+    .geojson-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .geojson-controls button {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
         font-size: 12px;
+    }
+
+    .geojson-controls button:last-child {
+        margin-bottom: 0;
+    }
+
+    .btn-draw {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .btn-draw.active {
+        background: #FF9800;
+    }
+
+    .btn-clear {
+        background: #f44336;
+        color: white;
+    }
+
+    .btn-save {
+        background: #2196F3;
+        color: white;
+    }
+
+    .btn-format {
+        background: #9C27B0;
+        color: white;
+        margin-top: 10px;
+    }
+
+    .geojson-textarea {
+        width: 100%;
+        height: 120px;
+        font-family: monospace;
+        font-size: 11px;
         padding: 10px;
         border: 1px solid #ddd;
         border-radius: 4px;
-        background-color: #f5f5f5;
+        background-color: #f9f9f9;
+        resize: vertical;
     }
-    
-    .geojson-widget-wrapper textarea:focus {
-        background-color: #fff;
-        border-color: #4CAF50;
-        outline: none;
-        box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+
+    .geojson-help {
+        margin-top: 8px;
+        font-size: 11px;
+        color: #666;
     }
 </style>
 
+<div class="geojson-widget-wrapper">
+    <div class="geojson-map-container" id="map-{{ widget.name }}">
+        <div class="geojson-controls">
+            <button type="button" class="btn-draw" id="btn-draw-{{ widget.name }}">Dibujar Ruta</button>
+            <button type="button" class="btn-clear" id="btn-clear-{{ widget.name }}">Limpiar</button>
+            <button type="button" class="btn-save" id="btn-save-{{ widget.name }}">Guardar Dibujo</button>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 10px;">
+        <button type="button" class="btn-format" id="btn-format-{{ widget.name }}"
+            style="padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            🪄 Pegar JSON y Extraer Geometría
+        </button>
+        <span style="font-size: 11px; color: #666; margin-left: 10px;">Pega tu FeatureCollection y haz click aquí</span>
+    </div>
+
+    <textarea name="{{ widget.name }}" id="id_{{ widget.name }}" class="geojson-textarea" {% if widget.attrs.placeholder
+        %}placeholder="{{ widget.attrs.placeholder }}" {% endif
+        %}>{% if widget.value and widget.value != 'None' %}{{ widget.value }}{% endif %}</textarea>
+
+    <p class="geojson-help">
+        <strong>Formato esperado:</strong> {"type": "LineString", "coordinates": [[lng, lat], ...]}
+    </p>
+</div>
+
+<script>
+    (function () {
+        const fieldName = '{{ widget.name }}';
+        const mapContainerId = 'map-' + fieldName;
+        const textareaId = 'id_' + fieldName;
+
+        function initMap() {
+            if (typeof L === 'undefined') {
+                console.error('Leaflet no esta cargado');
+                return;
+            }
+
+            const mapContainer = document.getElementById(mapContainerId);
+            const textarea = document.getElementById(textareaId);
+
+            if (!mapContainer || mapContainer._leaflet_id) return;
+
+            const map = L.map(mapContainerId).setView([-3.9932, -79.2044], 14);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
+
+            const drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            let isDrawing = false;
+            let currentLine = null;
+            const coordinates = [];
+            const markers = [];
+
+            // Función para cargar datos desde el textarea al mapa
+            function loadFromTextarea() {
+                try {
+                    const existingData = textarea.value.trim();
+                    drawnItems.clearLayers();
+
+                    if (existingData && existingData !== '{}') {
+                        const geojson = JSON.parse(existingData);
+
+                        // Soporte para LineString directo
+                        if (geojson.type === 'LineString' && geojson.coordinates && geojson.coordinates.length > 0) {
+                            const latLngs = geojson.coordinates.map(coord => [coord[1], coord[0]]);
+                            const polyline = L.polyline(latLngs, { color: '#e74c3c', weight: 4 });
+                            polyline.addTo(drawnItems);
+                            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+                        }
+                    }
+                } catch (e) {
+                    console.log('Error al parsear JSON existente:', e);
+                }
+            }
+
+            // Cargar datos iniciales
+            loadFromTextarea();
+
+            const btnDraw = document.getElementById('btn-draw-' + fieldName);
+            const btnClear = document.getElementById('btn-clear-' + fieldName);
+            const btnSave = document.getElementById('btn-save-' + fieldName);
+            const btnFormat = document.getElementById('btn-format-' + fieldName);
+
+            // Logica para Formatear/Extraer JSON
+            btnFormat.addEventListener('click', function (e) {
+                e.preventDefault();
+                try {
+                    const rawData = textarea.value.trim();
+                    if (!rawData) {
+                        alert('Primero pega el JSON FeatureCollection en el cuadro de texto.');
+                        return;
+                    }
+
+                    const json = JSON.parse(rawData);
+                    let geometry = null;
+
+                    // Caso 1: FeatureCollection
+                    if (json.type === 'FeatureCollection' && json.features && json.features.length > 0) {
+                        geometry = json.features[0].geometry;
+                    }
+                    // Caso 2: Feature individual
+                    else if (json.type === 'Feature' && json.geometry) {
+                        geometry = json.geometry;
+                    }
+
+                    if (geometry && geometry.type === 'LineString') {
+                        // Formatear bonito
+                        textarea.value = JSON.stringify(geometry, null, 2);
+                        // Actualizar mapa
+                        loadFromTextarea();
+                        alert('¡Geometría extraída correctamente!');
+                    } else {
+                        alert('No se encontró una geometría LineString válida en el JSON.');
+                    }
+                } catch (err) {
+                    alert('JSON inválido. Verifica que hayas copiado todo correctamente.');
+                    console.error(err);
+                }
+            });
+
+            btnDraw.addEventListener('click', function (e) {
+                e.preventDefault();
+                isDrawing = !isDrawing;
+                this.textContent = isDrawing ? 'Dibujando...' : 'Dibujar Ruta';
+                this.classList.toggle('active', isDrawing);
+                if (isDrawing) {
+                    coordinates.length = 0;
+                    markers.forEach(m => drawnItems.removeLayer(m));
+                    markers.length = 0;
+                    if (currentLine) {
+                        drawnItems.removeLayer(currentLine);
+                        currentLine = null;
+                    }
+                }
+            });
+
+            btnClear.addEventListener('click', function (e) {
+                e.preventDefault();
+                coordinates.length = 0;
+                markers.forEach(m => drawnItems.removeLayer(m));
+                markers.length = 0;
+                if (currentLine) {
+                    drawnItems.removeLayer(currentLine);
+                    currentLine = null;
+                }
+                drawnItems.clearLayers();
+                isDrawing = false;
+                btnDraw.textContent = 'Dibujar Ruta';
+                btnDraw.classList.remove('active');
+                textarea.value = '{}';
+            });
+
+            btnSave.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (coordinates.length >= 2) {
+                    const geojson = {
+                        type: 'LineString',
+                        coordinates: coordinates.slice()
+                    };
+                    textarea.value = JSON.stringify(geojson, null, 2);
+                    isDrawing = false;
+                    btnDraw.textContent = 'Dibujar Ruta';
+                    btnDraw.classList.remove('active');
+                    alert('Ruta guardada: ' + coordinates.length + ' puntos');
+                } else {
+                    alert('Necesitas al menos 2 puntos para crear una ruta');
+                }
+            });
+
+            map.on('click', function (e) {
+                if (!isDrawing) return;
+
+                const latlng = e.latlng;
+                coordinates.push([latlng.lng, latlng.lat]);
+
+                const marker = L.circleMarker([latlng.lat, latlng.lng], {
+                    radius: 6,
+                    fillColor: '#e74c3c',
+                    color: '#c0392b',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(drawnItems);
+                markers.push(marker);
+
+                if (coordinates.length > 1) {
+                    if (currentLine) {
+                        drawnItems.removeLayer(currentLine);
+                    }
+                    const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+                    currentLine = L.polyline(latLngs, { color: '#e74c3c', weight: 4 });
+                    currentLine.addTo(drawnItems);
+                }
+            });
+
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 100);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMap);
+        } else {
+            setTimeout(initMap, 100);
+        }
+    })();
+</script>

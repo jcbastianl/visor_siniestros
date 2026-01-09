@@ -8,7 +8,8 @@ class LineaBus(models.Model):
     geom = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Datos de geometría GeoJSON de la ruta de la línea de bus (LineString)."
+        null=True,
+        help_text="Datos de geometria GeoJSON de la ruta de la linea de bus (LineString)."
     )
     origen = models.CharField(max_length=100, default="", help_text="Punto de inicio o terminal de la línea.")
     destino = models.CharField(max_length=100, default="", help_text="Punto final o terminal de la línea.")
@@ -48,7 +49,8 @@ class Ciclovia(models.Model):
     geom = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Geometría GeoJSON LineString de la ruta. Formato [lng, lat]"
+        null=True,
+        help_text="Geometria GeoJSON LineString de la ruta. Formato [lng, lat]"
     )
     longitud_km = models.DecimalField(
         max_digits=5,

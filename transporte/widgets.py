@@ -2,6 +2,7 @@
 Widgets personalizados para el admin de transporte.
 """
 from django import forms
+import json
 
 
 class ColorPickerWidget(forms.TextInput):
@@ -19,3 +20,37 @@ class ColorPickerWidget(forms.TextInput):
         if attrs:
             default_attrs.update(attrs)
         super().__init__(attrs=default_attrs)
+
+
+class GeoJSONMapWidget(forms.Widget):
+    """Widget de mapa Leaflet para dibujar rutas GeoJSON LineString."""
+    
+    template_name = 'widgets/geojson_widget.html'
+    
+    class Media:
+        css = {
+            'all': [
+                'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
+            ]
+        }
+        js = [
+            'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+        ]
+    
+    def format_value(self, value):
+        """Formatea el valor para mostrar en el widget."""
+        if value is None or value == '':
+            return '{}'
+        if isinstance(value, dict):
+            return json.dumps(value, indent=2) if value else '{}'
+        return value
+    
+    def value_from_datadict(self, data, files, name):
+        """Obtiene el valor del POST data."""
+        value = data.get(name, '{}')
+        if not value or value.strip() == '':
+            return {}
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return {}
