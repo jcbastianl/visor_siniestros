@@ -1,10 +1,12 @@
 from django.contrib import admin
 from .models import LineaBus, Ciclovia
+from .forms import LineaBusAdminForm, CicloviaAdminForm
 
 
 @admin.register(LineaBus)
 class LineaBusAdmin(admin.ModelAdmin):
-    """Configuración admin para el modelo LineaBus."""
+    """Configuracion admin para el modelo LineaBus con color picker."""
+    form = LineaBusAdminForm
     list_display = ('nombre', 'color', 'origen', 'destino', 'tarifa_base', 'activo', 'fecha_creacion')
     list_filter = ('activo', 'fecha_creacion')
     search_fields = ('nombre', 'origen', 'destino')
@@ -30,7 +32,8 @@ class LineaBusAdmin(admin.ModelAdmin):
 
 @admin.register(Ciclovia)
 class CicloviaAdmin(admin.ModelAdmin):
-    """Configuración admin para el modelo Ciclovia."""
+    """Configuracion admin para el modelo Ciclovia con color picker."""
+    form = CicloviaAdminForm
     list_display = ('nombre', 'color', 'longitud_km', 'tipo_separacion', 'activo', 'fecha_creacion')
     list_filter = ('activo', 'tipo_separacion', 'fecha_creacion')
     search_fields = ('nombre',)
