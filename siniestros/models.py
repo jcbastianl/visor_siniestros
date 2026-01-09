@@ -51,9 +51,9 @@ class Siniestro(models.Model):
 
     # (El campo Severidad se queda igual, con TextChoices, porque es crítico)
     class Severidad(models.TextChoices):
-        CON_FALLECIDOS = 'CON_FALLECIDOS', 'con fallecidos en sitio'
-        CON_LESIONADOS = 'CON_LESIONADOS', 'con lesionados'
-        SOLO_DANOS = 'SOLO_DANOS', 'solo con danos materiales'
+        CON_FALLECIDOS = 'CON_FALLECIDOS', 'Con fallecidos en sitio'
+        CON_LESIONADOS = 'CON_LESIONADOS', 'Con lesionados'
+        SOLO_DANOS = 'SOLO_DANOS', 'Solo con daños materiales'
     grado_severidad = models.CharField(
         max_length=20, 
         choices=Severidad.choices,
