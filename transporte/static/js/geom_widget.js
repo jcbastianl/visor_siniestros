@@ -1,26 +1,26 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const geomInputs = document.querySelectorAll('textarea[name="geom"]');
-    
+
     geomInputs.forEach((textarea, index) => {
         const containerId = 'geom-map-' + index;
         const container = document.createElement('div');
         container.id = containerId;
         container.style.cssText = 'width: 100%; height: 400px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;';
-        
+
         textarea.parentElement.insertBefore(container, textarea);
-        
+
         // Inicializar mapa con Leaflet
         if (typeof L !== 'undefined') {
             const map = L.map(containerId).setView([-3.9932, -79.2044], 13); // Loja, Ecuador
-            
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(map);
-            
+
             let drawnItems = new L.FeatureGroup();
             map.addLayer(drawnItems);
-            
+
             // Intentar cargar datos existentes del textarea
             try {
                 const existingData = textarea.value.trim();
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const geojson = JSON.parse(existingData);
                     if (geojson.type === 'LineString' && geojson.coordinates.length > 0) {
                         const latLngs = geojson.coordinates.map(coord => [coord[1], coord[0]]);
-                        const polyline = L.polyline(latLngs, {color: 'red', weight: 3});
+                        const polyline = L.polyline(latLngs, { color: 'red', weight: 3 });
                         polyline.addTo(drawnItems);
                         map.fitBounds(polyline.getBounds());
                     }
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 console.log('No existing geom data');
             }
-            
+
             // Crear controles de dibujo simplificados
             const drawControl = document.createElement('div');
             drawControl.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 999; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
@@ -51,16 +51,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     Guardar Ruta
                 </button>
             `;
-            
+
             const mapContainer = document.getElementById(containerId);
             mapContainer.style.position = 'relative';
             mapContainer.appendChild(drawControl);
-            
+
             let isDrawing = false;
             let currentLine = null;
             const coordinates = [];
-            
-            document.getElementById(`draw-line-${index}`).addEventListener('click', function() {
+
+            document.getElementById(`draw-line-${index}`).addEventListener('click', function (e) {
+                e.stopPropagation();
+                e.preventDefault();
                 isDrawing = !isDrawing;
                 this.textContent = isDrawing ? 'Dibujando... (click en el mapa)' : 'Dibujar Ruta';
                 this.style.background = isDrawing ? '#FF9800' : '#4CAF50';
@@ -72,8 +74,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentLine = null;
                 }
             });
-            
-            document.getElementById(`clear-line-${index}`).addEventListener('click', function() {
+
+            document.getElementById(`clear-line-${index}`).addEventListener('click', function (e) {
+                e.stopPropagation();
+                e.preventDefault();
                 coordinates.length = 0;
                 isDrawing = false;
                 if (currentLine) {
@@ -84,8 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById(`draw-line-${index}`).style.background = '#4CAF50';
                 textarea.value = '';
             });
-            
-            document.getElementById(`finish-line-${index}`).addEventListener('click', function() {
+
+            document.getElementById(`finish-line-${index}`).addEventListener('click', function (e) {
+                e.stopPropagation();
+                e.preventDefault();
                 if (coordinates.length >= 2) {
                     const geojson = {
                         type: 'LineString',
@@ -100,13 +106,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Debes dibujar al menos 2 puntos para crear una ruta');
                 }
             });
-            
+
             // Click en el mapa para agregar puntos
-            map.on('click', function(e) {
+            map.on('click', function (e) {
                 if (isDrawing) {
                     const latlng = e.latlng;
                     coordinates.push([latlng.lng, latlng.lat]);
-                    
+
                     // Agregar marcador
                     L.circleMarker([latlng.lat, latlng.lng], {
                         radius: 5,
@@ -116,14 +122,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         opacity: 1,
                         fillOpacity: 0.8
                     }).addTo(drawnItems);
-                    
+
                     // Dibujar línea
                     if (coordinates.length > 1) {
                         if (currentLine) {
                             drawnItems.removeLayer(currentLine);
                         }
                         const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-                        currentLine = L.polyline(latLngs, {color: 'red', weight: 3});
+                        currentLine = L.polyline(latLngs, { color: 'red', weight: 3 });
                         currentLine.addTo(drawnItems);
                     }
                 }
