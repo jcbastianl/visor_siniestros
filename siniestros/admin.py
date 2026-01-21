@@ -1,5 +1,11 @@
 from django.contrib import admin
+from django.urls import path
+from django.shortcuts import render
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.contrib import messages
 from .models import Siniestro, Victima, Causa, TipoSiniestro
+from .csv_import import import_csv
 
 @admin.register(Causa)
 class CausaAdmin(admin.ModelAdmin):
@@ -69,3 +75,60 @@ class SiniestroAdmin(admin.ModelAdmin):
     date_hierarchy = 'fecha_hora'
     
     readonly_fields = ('grado_severidad',)
+    
+    # Agregar botón de importar CSV en el changelist
+    change_list_template = 'admin/siniestros/siniestro_changelist.html'
+    
+    def get_urls(self):
+        """Agrega URL personalizada para importar CSV."""
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'import-csv/',
+                self.admin_site.admin_view(self.import_csv_view),
+                name='siniestros_siniestro_import_csv',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def import_csv_view(self, request):
+        """Vista para manejar la importación de CSV."""
+        context = {
+            'title': 'Importar Siniestros desde CSV',
+            'opts': self.model._meta,
+            'has_permission': True,
+        }
+        
+        if request.method == 'POST':
+            csv_file = request.FILES.get('csv_file')
+            clear_existing = request.POST.get('clear_existing') == 'on'
+            
+            if not csv_file:
+                messages.error(request, 'Por favor seleccione un archivo CSV.')
+                return render(request, 'admin/siniestros/csv_upload.html', context)
+            
+            if not csv_file.name.endswith('.csv'):
+                messages.error(request, 'El archivo debe ser un CSV.')
+                return render(request, 'admin/siniestros/csv_upload.html', context)
+            
+            try:
+                results = import_csv(csv_file, clear_existing=clear_existing)
+                context['results'] = results
+                
+                if results['errores']:
+                    messages.warning(
+                        request, 
+                        f"Importación completada con {len(results['errores'])} errores. "
+                        f"Se crearon {results['siniestros_creados']} siniestros y {results['victimas_creadas']} víctimas."
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Importación exitosa: {results['siniestros_creados']} siniestros y "
+                        f"{results['victimas_creadas']} víctimas creados."
+                    )
+                    
+            except Exception as e:
+                messages.error(request, f'Error al procesar el archivo: {str(e)}')
+        
+        return render(request, 'admin/siniestros/csv_upload.html', context)

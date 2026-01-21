@@ -1,0 +1,11 @@
+fecha_hora,latitud,longitud,via,grado_severidad,tipo_siniestro,causa_probable,victimas
+2024-03-15 08:30:00,-4.0025,-79.2015,Av. Universitaria,CON_LESIONADOS,Choque Vehicular,Exceso de velocidad,"[{""edad"":25,""condicion"":""LESIONADO"",""sexo"":""HOMBRE"",""actor_vial"":""MOTOCICLETA""}]"
+2024-03-15 14:45:00,-4.0102,-79.1989,Av. Orillas del Zamora,CON_FALLECIDOS,Atropellamiento,Imprudencia del conductor,"[{""edad"":45,""condicion"":""FALLECIDO"",""sexo"":""HOMBRE"",""actor_vial"":""PEATON""},{""edad"":32,""condicion"":""LESIONADO"",""sexo"":""MUJER"",""actor_vial"":""VEH_LIVIANO""}]"
+2024-03-16 09:15:00,-3.9956,-79.2102,Calle Bolivar,SOLO_DANOS,Choque Vehicular,Via resbaladiza o mojada,
+2024-03-16 18:30:00,-4.0078,-79.1945,Av. 8 de Diciembre,CON_LESIONADOS,Volcamiento,Falla mecanica,"[{""edad"":28,""condicion"":""LESIONADO"",""sexo"":""MUJER"",""actor_vial"":""VEH_LIVIANO""},{""edad"":35,""condicion"":""ILESO"",""sexo"":""HOMBRE"",""actor_vial"":""VEH_LIVIANO""}]"
+2024-03-17 07:00:00,-4.0134,-79.2056,Calle 10 de Agosto,CON_LESIONADOS,Caida,Distraccion (celular/radio),"[{""edad"":19,""condicion"":""LESIONADO"",""sexo"":""HOMBRE"",""actor_vial"":""CICLISTA""}]"
+2024-03-17 11:20:00,-3.9989,-79.1978,Av. Manuel Agustin Aguirre,SOLO_DANOS,Colision Multiple,Inobservancia de senales,
+2024-03-17 16:45:00,-4.0067,-79.2134,Via Loja - Catamayo,CON_FALLECIDOS,Volcamiento,Estado de embriaguez,"[{""edad"":38,""condicion"":""FALLECIDO"",""sexo"":""HOMBRE"",""actor_vial"":""MOTOCICLETA""},{""edad"":22,""condicion"":""FALLECIDO"",""sexo"":""MUJER"",""actor_vial"":""MOTOCICLETA""}]"
+2024-03-18 10:00:00,-4.0012,-79.2045,Av. Cuxibamba,CON_LESIONADOS,Choque Vehicular,Fatiga del conductor,"[{""edad"":55,""condicion"":""LESIONADO"",""sexo"":""HOMBRE"",""actor_vial"":""VEH_LIVIANO""}]"
+2024-03-18 15:30:00,-4.0089,-79.1923,Calle Sucre,SOLO_DANOS,Choque Vehicular,Visibilidad reducida,
+2024-03-19 08:45:00,-3.9978,-79.2089,Av. Pio Jaramillo,CON_LESIONADOS,Atropellamiento,Imprudencia del conductor,"[{""edad"":67,""condicion"":""LESIONADO"",""sexo"":""MUJER"",""actor_vial"":""PEATON""}]"

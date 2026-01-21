@@ -1,0 +1,359 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Importar Siniestros desde CSV{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .csv-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .csv-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 1px solid #0f3460;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .csv-card h3 {
+        color: #00d9ff;
+        margin-top: 0;
+        font-size: 1.3em;
+        border-bottom: 2px solid #0f3460;
+        padding-bottom: 10px;
+        margin-bottom: 16px;
+    }
+
+    .csv-card p,
+    .csv-card li {
+        color: #e0e0e0;
+    }
+
+    .csv-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        background: #0d1b2a;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .csv-table thead tr {
+        background: linear-gradient(90deg, #e94560 0%, #ff6b6b 100%);
+    }
+
+    .csv-table th {
+        padding: 14px 12px;
+        text-align: left;
+        color: #fff;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85em;
+        letter-spacing: 0.5px;
+    }
+
+    .csv-table td {
+        padding: 12px;
+        border-bottom: 1px solid #1f4068;
+        color: #e0e0e0;
+    }
+
+    .csv-table tbody tr:hover {
+        background: #1f4068;
+    }
+
+    .csv-table code {
+        background: #0f3460;
+        color: #00d9ff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9em;
+    }
+
+    .valores-permitidos {
+        background: #0d1b2a;
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 16px;
+    }
+
+    .valores-permitidos h4 {
+        color: #ffc107;
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+
+    .valores-permitidos li {
+        margin-bottom: 8px;
+    }
+
+    .valores-permitidos strong {
+        color: #00d9ff;
+    }
+
+    .results-card {
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .results-success {
+        background: linear-gradient(135deg, #1d4e3e 0%, #2d6a4f 100%);
+        border: 1px solid #40916c;
+    }
+
+    .results-warning {
+        background: linear-gradient(135deg, #4a4000 0%, #665c00 100%);
+        border: 1px solid #ffc107;
+    }
+
+    .results-card h3 {
+        color: #4ade80;
+        margin-top: 0;
+    }
+
+    .results-card ul {
+        color: #e0e0e0;
+    }
+
+    .results-card strong {
+        color: #fff;
+    }
+
+    .error-list {
+        max-height: 200px;
+        overflow-y: auto;
+        background: #1a1a2e;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 12px;
+    }
+
+    .error-list li {
+        color: #ff6b6b;
+        margin-bottom: 6px;
+    }
+
+    .form-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid #0f3460;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #00d9ff;
+        font-size: 1.05em;
+    }
+
+    .file-input {
+        padding: 16px;
+        border: 2px dashed #0f3460;
+        border-radius: 8px;
+        width: 100%;
+        box-sizing: border-box;
+        background: #0d1b2a;
+        color: #e0e0e0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .file-input:hover {
+        border-color: #00d9ff;
+        background: #1f4068;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        color: #e0e0e0;
+    }
+
+    .checkbox-group input {
+        margin-right: 10px;
+        width: 18px;
+        height: 18px;
+        accent-color: #e94560;
+    }
+
+    .checkbox-warning {
+        color: #ffc107;
+        display: block;
+        margin-top: 8px;
+        font-size: 0.9em;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn {
+        padding: 14px 28px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #e94560 0%, #ff6b6b 100%);
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+    }
+
+    .btn-secondary {
+        background: #0f3460;
+        color: #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+        background: #1f4068;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="csv-container">
+    <h1 style="color: #fff; margin-bottom: 24px;">📊 Importar Siniestros desde CSV</h1>
+
+    <div class="csv-card">
+        <h3>📋 Formato del archivo CSV</h3>
+        <p>El archivo debe tener las siguientes columnas:</p>
+        <table class="csv-table">
+            <thead>
+                <tr>
+                    <th>Columna</th>
+                    <th>Descripción</th>
+                    <th>Ejemplo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>fecha_hora</code></td>
+                    <td>Fecha y hora (obligatorio)</td>
+                    <td>2024-03-15 14:30:00</td>
+                </tr>
+                <tr>
+                    <td><code>latitud</code></td>
+                    <td>Coordenada latitud (obligatorio)</td>
+                    <td>-4.0025</td>
+                </tr>
+                <tr>
+                    <td><code>longitud</code></td>
+                    <td>Coordenada longitud (obligatorio)</td>
+                    <td>-79.2015</td>
+                </tr>
+                <tr>
+                    <td><code>via</code></td>
+                    <td>Nombre de la vía</td>
+                    <td>Av. Universitaria</td>
+                </tr>
+                <tr>
+                    <td><code>grado_severidad</code></td>
+                    <td>Severidad (obligatorio)</td>
+                    <td>CON_FALLECIDOS, CON_LESIONADOS, SOLO_DANOS</td>
+                </tr>
+                <tr>
+                    <td><code>tipo_siniestro</code></td>
+                    <td>Tipo de siniestro</td>
+                    <td>Choque Vehicular</td>
+                </tr>
+                <tr>
+                    <td><code>causa_probable</code></td>
+                    <td>Causa probable</td>
+                    <td>Exceso de velocidad</td>
+                </tr>
+                <tr>
+                    <td><code>victimas</code></td>
+                    <td>JSON con víctimas (opcional)</td>
+                    <td>[{"edad":25,"condicion":"LESIONADO",...}]</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="valores-permitidos">
+            <h4>🏷️ Valores permitidos para víctimas:</h4>
+            <ul>
+                <li><strong>condicion:</strong> FALLECIDO, LESIONADO, ILESO</li>
+                <li><strong>sexo:</strong> HOMBRE, MUJER, NO_REGISTRA</li>
+                <li><strong>actor_vial:</strong> PEATON, MOTOCICLETA, VEH_LIVIANO, CICLISTA, SCOOTER, OTRO</li>
+            </ul>
+        </div>
+    </div>
+
+    {% if results %}
+    <div class="results-card {% if results.errores %}results-warning{% else %}results-success{% endif %}">
+        <h3>✅ Resultados de la importación</h3>
+        <ul>
+            <li><strong>Filas procesadas:</strong> {{ results.filas_procesadas }}</li>
+            <li><strong>Siniestros creados:</strong> {{ results.siniestros_creados }}</li>
+            <li><strong>Víctimas creadas:</strong> {{ results.victimas_creadas }}</li>
+        </ul>
+
+        {% if results.errores %}
+        <h4 style="color: #ffc107; margin-top: 16px;">⚠️ Errores encontrados:</h4>
+        <ul class="error-list">
+            {% for error in results.errores %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="form-card">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="csv_file">📁 Seleccionar archivo CSV:</label>
+            <input type="file" name="csv_file" id="csv_file" accept=".csv" required class="file-input">
+        </div>
+
+        <div class="form-group">
+            <label class="checkbox-group">
+                <input type="checkbox" name="clear_existing">
+                <span>🗑️ Eliminar datos existentes antes de importar</span>
+            </label>
+            <small class="checkbox-warning">
+                ⚠️ Esta opción eliminará TODOS los siniestros y víctimas existentes
+            </small>
+        </div>
+
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">
+                📤 Importar CSV
+            </button>
+            <a href="{% url 'admin:siniestros_siniestro_changelist' %}" class="btn btn-secondary">
+                ← Volver a la lista
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
