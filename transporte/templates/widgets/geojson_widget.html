@@ -16,31 +16,28 @@
         position: relative;
     }
 
-    .geojson-controls {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 1000;
-        background: white;
+    .geojson-controls-bar {
+        display: flex;
+        gap: 10px;
+        background: #f5f5f5;
         padding: 10px;
         border-radius: 4px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        border: 1px solid #ddd;
     }
 
-    .geojson-controls button {
-        display: block;
-        width: 100%;
-        margin-bottom: 5px;
-        padding: 8px 12px;
+    .geojson-controls-bar button {
+        padding: 8px 16px;
         border: none;
         border-radius: 4px;
         cursor: pointer;
         font-weight: bold;
         font-size: 12px;
+        transition: all 0.2s;
     }
 
-    .geojson-controls button:last-child {
-        margin-bottom: 0;
+    .geojson-controls-bar button:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
     }
 
     .btn-draw {
@@ -88,12 +85,15 @@
 </style>
 
 <div class="geojson-widget-wrapper">
-    <div class="geojson-map-container" id="map-{{ widget.name }}">
-        <div class="geojson-controls">
+    <div class="geojson-controls-wrapper" style="margin-bottom: 10px;">
+        <div class="geojson-controls-bar">
             <button type="button" class="btn-draw" id="btn-draw-{{ widget.name }}">Dibujar Ruta</button>
             <button type="button" class="btn-clear" id="btn-clear-{{ widget.name }}">Limpiar</button>
             <button type="button" class="btn-save" id="btn-save-{{ widget.name }}">Guardar Dibujo</button>
         </div>
+    </div>
+
+    <div class="geojson-map-container" id="map-{{ widget.name }}">
     </div>
 
     <div style="margin-bottom: 10px;">
