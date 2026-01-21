@@ -2,85 +2,106 @@
 <style>
     .geojson-widget-wrapper {
         padding: 15px;
-        background-color: #fafafa;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
+        background-color: #1a1a2e;
+        /* Dark background */
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #e0e0e0;
+        /* Light text */
+        width: 100%;
+        max-width: 100%;
+        /* Force full width */
+        box-sizing: border-box;
     }
 
     .geojson-map-container {
         width: 100%;
-        height: 400px;
+        height: 500px;
+        /* Taller map for better visibility */
         margin-bottom: 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        border: 2px solid #0f3460;
+        border-radius: 8px;
         position: relative;
+        overflow: hidden;
     }
 
     .geojson-controls-bar {
         display: flex;
-        gap: 10px;
-        background: #f5f5f5;
-        padding: 10px;
-        border-radius: 4px;
-        border: 1px solid #ddd;
+        gap: 12px;
+        background: #16213e;
+        /* Dark control bar */
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #0f3460;
+        flex-wrap: wrap;
+        align-items: center;
     }
 
     .geojson-controls-bar button {
-        padding: 8px 16px;
+        padding: 10px 20px;
         border: none;
-        border-radius: 4px;
+        border-radius: 6px;
         cursor: pointer;
-        font-weight: bold;
-        font-size: 12px;
+        font-weight: 600;
+        font-size: 13px;
         transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .geojson-controls-bar button:hover {
         opacity: 0.9;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
 
     .btn-draw {
-        background: #4CAF50;
+        background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
         color: white;
     }
 
     .btn-draw.active {
-        background: #FF9800;
+        background: linear-gradient(135deg, #fb8c00 0%, #ef6c00 100%);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .btn-clear {
-        background: #f44336;
+        background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
         color: white;
     }
 
     .btn-save {
-        background: #2196F3;
+        background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
         color: white;
     }
 
     .btn-format {
-        background: #9C27B0;
+        background: #5e35b1;
         color: white;
         margin-top: 10px;
+        padding: 8px 16px !important;
     }
 
     .geojson-textarea {
         width: 100%;
         height: 120px;
-        font-family: monospace;
-        font-size: 11px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        background-color: #f9f9f9;
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 12px;
+        padding: 15px;
+        border: 1px solid #333;
+        border-radius: 6px;
+        background-color: #0d1b2a;
+        /* Very dark background */
+        color: #00d9ff;
+        /* Cyan text */
         resize: vertical;
+        box-sizing: border-box;
     }
 
     .geojson-help {
-        margin-top: 8px;
-        font-size: 11px;
-        color: #666;
+        margin-top: 10px;
+        font-size: 12px;
+        color: #aaa;
     }
 </style>
 
@@ -96,12 +117,11 @@
     <div class="geojson-map-container" id="map-{{ widget.name }}">
     </div>
 
-    <div style="margin-bottom: 10px;">
-        <button type="button" class="btn-format" id="btn-format-{{ widget.name }}"
-            style="padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+    <div style="margin-bottom: 10px; display: flex; align-items: center;">
+        <button type="button" class="btn-format" id="btn-format-{{ widget.name }}">
             🪄 Pegar JSON y Extraer Geometría
         </button>
-        <span style="font-size: 11px; color: #666; margin-left: 10px;">Pega tu FeatureCollection y haz click aquí</span>
+        <span style="font-size: 11px; color: #aaa; margin-left: 10px;">Pega tu FeatureCollection y haz click aquí</span>
     </div>
 
     <textarea name="{{ widget.name }}" id="id_{{ widget.name }}" class="geojson-textarea" {% if widget.attrs.placeholder
