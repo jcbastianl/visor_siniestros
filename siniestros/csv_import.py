@@ -163,24 +163,79 @@ def validate_actor_vial(value):
     return Victima.ActorVial.OTRO
 
 
-def parse_victimas_json(json_str):
+def parse_victimas_columns(row, max_victimas=20):
     """
-    Parsea un string JSON con la lista de víctimas.
-    Formato esperado: [{"edad": 25, "condicion": "LESIONADO", "sexo": "HOMBRE", "actor_vial": "MOTOCICLETA"}]
-    """
-    if not json_str or json_str.strip() == '':
-        return []
+    Parsea víctimas desde columnas simples en lugar de JSON.
+    Busca columnas victima1_*, victima2_*, etc.
     
-    try:
-        victimas_data = json.loads(json_str)
-        if not isinstance(victimas_data, list):
-            victimas_data = [victimas_data]
-        return victimas_data
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Error al parsear JSON de víctimas: {e}")
+    Returns: Lista de diccionarios con datos de víctimas
+    """
+    victimas_data = []
+    i = 1
+    
+    while True:
+        prefix = f'victima{i}_'
+        
+        # Verificar si existe alguna columna para este índice
+        # Buscamos claves que empiecen con el prefijo en la fila actual
+        # Pero como row es un diccionario, podemos chequear claves especificas
+        # Si no existe 'victimaX_condicion' ni 'victimaX_edad', asumimos que no hay mas
+        
+        has_data = False
+        possible_fields = ['condicion', 'edad', 'sexo', 'actor_vial']
+        
+        # Verificar si alguna columna de este indice tiene valor
+        for field in possible_fields:
+            if row.get(f'{prefix}{field}', '').strip():
+                 has_data = True
+                 break
+        
+        if not has_data:
+            # Si llegamos a victimaX y no tiene datos, intentamos ver si quizas
+            # el usuario salto un numero (raro pero posible) o terminamos.
+            # Para seguridad, si no encontramos la 1, seguimos. Si encontramos la 1 pero no la 2, paramos.
+            if i > 50: # Limite de seguridad absurdo para evitar loop infinito
+                break
+            
+            # Simple check: si no hay condicion ni edad, asumimos fin, SALVO que haya gaps.
+            # Asumiremos que son consecutivos.
+            break
+
+        # Procesar
+        condicion = row.get(f'{prefix}condicion', '').strip()
+        # Si hay datos pero no condicion default, podemos poner ILESO o skipear?
+        # Mejor procesamos lo que haya.
+        
+        if not condicion and not has_data:
+             i += 1
+             continue
+
+        victima = {
+            'condicion': condicion if condicion else 'ILESO', # Default si olvidaron condicion
+            'edad': None,
+            'sexo': '',
+            'actor_vial': '',
+        }
+        
+        # Parsear edad (puede estar vacía)
+        edad_str = row.get(f'{prefix}edad', '').strip()
+        if edad_str:
+            try:
+                victima['edad'] = int(edad_str)
+            except ValueError:
+                pass  # Dejar como None si no es un número válido
+        
+        # Parsear sexo y actor_vial
+        victima['sexo'] = row.get(f'{prefix}sexo', '').strip()
+        victima['actor_vial'] = row.get(f'{prefix}actor_vial', '').strip()
+        
+        victimas_data.append(victima)
+        i += 1
+    
+    return victimas_data
 
 
-def import_csv(csv_file, clear_existing=False):
+def import_csv(csv_file, clear_existing=False, anio_filtro=None):
     """
     Importa datos de siniestros desde un archivo CSV.
     
@@ -237,6 +292,18 @@ def import_csv(csv_file, clear_existing=False):
         try:
             # Campos obligatorios
             fecha_hora = parse_datetime(row.get('fecha_hora', ''))
+            
+            # Filtrar por año si se especificó
+            if anio_filtro:
+                try:
+                    anio_filtro_int = int(anio_filtro)
+                    if fecha_hora.year != anio_filtro_int:
+                        # Saltar registros que no coincidan con el año
+                        continue
+                except ValueError:
+                    # Si el filtro de año no es un número válido, ignorarlo (o loguearlo)
+                    pass
+
             latitud = float(row.get('latitud', 0))
             longitud = float(row.get('longitud', 0))
             grado_severidad = validate_severidad(row.get('grado_severidad', ''))
@@ -245,7 +312,6 @@ def import_csv(csv_file, clear_existing=False):
             via = row.get('via', '').strip()
             tipo_nombre = row.get('tipo_siniestro', '').strip()
             causa_nombre = row.get('causa_probable', '').strip()
-            victimas_json = row.get('victimas', '').strip()
             
             # Crear el siniestro
             siniestro = Siniestro(
@@ -260,11 +326,10 @@ def import_csv(csv_file, clear_existing=False):
             
             siniestros_batch.append(siniestro)
             
-            # Guardar datos de víctimas para procesar después
-            if victimas_json:
-                victimas_data = parse_victimas_json(victimas_json)
-                if victimas_data:
-                    victimas_pending.append((len(siniestros_batch) - 1, victimas_data))
+            # Parsear víctimas desde columnas (victima1_*, victima2_*, etc.)
+            victimas_data = parse_victimas_columns(row)
+            if victimas_data:
+                victimas_pending.append((len(siniestros_batch) - 1, victimas_data))
             
         except Exception as e:
             stats['errores'].append(f"Fila {row_num}: {str(e)}")

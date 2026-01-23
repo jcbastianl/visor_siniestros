@@ -7,7 +7,7 @@ from .forms import LineaBusAdminForm, CicloviaAdminForm
 class LineaBusAdmin(admin.ModelAdmin):
     """Configuracion admin para el modelo LineaBus con color picker."""
     form = LineaBusAdminForm
-    list_display = ('nombre', 'color', 'origen', 'destino', 'tarifa_base', 'activo', 'fecha_creacion')
+    list_display = ('nombre', 'color', 'origen', 'destino', 'tarifa_base', 'tarifa_preferencial', 'activo', 'fecha_creacion')
     list_filter = ('activo', 'fecha_creacion')
     search_fields = ('nombre', 'origen', 'destino')
     readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
@@ -17,7 +17,12 @@ class LineaBusAdmin(admin.ModelAdmin):
             'fields': ('nombre', 'color', 'activo')
         }),
         ('Ruta y Tarifa', {
-            'fields': ('origen', 'destino', 'tarifa_base', 'descripcion')
+            'fields': ('origen', 'destino', 'tarifa_base', 'tarifa_preferencial', 'descripcion')
+        }),
+        ('Paradas', {
+            'fields': ('paradas',),
+            'classes': ('collapse',),
+            'description': 'Lista de paradas en formato JSON: [[lng, lat], ...]'
         }),
         ('Geometría', {
             'fields': ('geom',),

@@ -75,11 +75,26 @@
         color: white;
     }
 
+    .btn-undo {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        color: white;
+    }
+
+    .btn-undo:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     .btn-format {
         background: #5e35b1;
         color: white;
         margin-top: 10px;
         padding: 8px 16px !important;
+    }
+
+    .btn-mode {
+        color: white;
+        transition: all 0.3s;
     }
 
     .geojson-textarea {
@@ -108,9 +123,19 @@
 <div class="geojson-widget-wrapper">
     <div class="geojson-controls-wrapper" style="margin-bottom: 10px;">
         <div class="geojson-controls-bar">
-            <button type="button" class="btn-draw" id="btn-draw-{{ widget.name }}">Dibujar Ruta</button>
+            <!-- Mode Switchers -->
+            <div
+                style="display: flex; gap: 5px; margin-right: 15px; border-right: 1px solid #333; padding-right: 15px;">
+                <button type="button" class="btn-mode active" id="btn-mode-route-{{ widget.name }}"
+                    style="background: #e74c3c;">📍 Modo Ruta</button>
+                <button type="button" class="btn-mode" id="btn-mode-stops-{{ widget.name }}"
+                    style="background: #333;">🚏 Modo Paradas</button>
+            </div>
+
+            <button type="button" class="btn-draw" id="btn-draw-{{ widget.name }}">✏️ Dibujar</button>
+            <button type="button" class="btn-undo" id="btn-undo-{{ widget.name }}" disabled>↩ Deshacer</button>
             <button type="button" class="btn-clear" id="btn-clear-{{ widget.name }}">Limpiar</button>
-            <button type="button" class="btn-save" id="btn-save-{{ widget.name }}">Guardar Dibujo</button>
+            <button type="button" class="btn-save" id="btn-save-{{ widget.name }}">Guardar Todo</button>
         </div>
     </div>
 
@@ -137,7 +162,11 @@
     (function () {
         const fieldName = '{{ widget.name }}';
         const mapContainerId = 'map-' + fieldName;
+        // Identificar si es campo principal (route) o campo paradas
+        // En este nuevo enfoque, siempre asumimos que estamos en el widget del campo 'geom'
+        // pero buscamos el campo 'paradas' oculto.
         const textareaId = 'id_' + fieldName;
+        const paradasFieldId = 'id_paradas';
 
         function initMap() {
             if (typeof L === 'undefined') {
@@ -147,6 +176,7 @@
 
             const mapContainer = document.getElementById(mapContainerId);
             const textarea = document.getElementById(textareaId);
+            const paradasInput = document.getElementById(paradasFieldId);
 
             if (!mapContainer || mapContainer._leaflet_id) return;
 
@@ -157,159 +187,259 @@
                 maxZoom: 19
             }).addTo(map);
 
-            const drawnItems = new L.FeatureGroup();
-            map.addLayer(drawnItems);
+            // Capas para separar rutas y paradas
+            const routeLayer = new L.FeatureGroup();
+            const stopsLayer = new L.FeatureGroup();
 
+            map.addLayer(routeLayer);
+            map.addLayer(stopsLayer);
+
+            // Estado
             let isDrawing = false;
+            let currentMode = 'route'; // 'route' or 'stops'
+
+            // Datos
+            const routeCoordinates = [];
             let currentLine = null;
-            const coordinates = [];
-            const markers = [];
 
-            // Función para cargar datos desde el textarea al mapa
-            function loadFromTextarea() {
+            const stopsCoordinates = [];
+            const stopMarkers = [];
+
+            // Referencias UI
+            const btnDraw = document.getElementById('btn-draw-' + fieldName);
+            const btnUndo = document.getElementById('btn-undo-' + fieldName);
+            const btnClear = document.getElementById('btn-clear-' + fieldName);
+            const btnSave = document.getElementById('btn-save-' + fieldName);
+
+            const btnModeRoute = document.getElementById('btn-mode-route-' + fieldName);
+            const btnModeStops = document.getElementById('btn-mode-stops-' + fieldName);
+
+            // --- Funciones de Carga de Datos ---
+
+            function loadRouteData() {
                 try {
-                    const existingData = textarea.value.trim();
-                    drawnItems.clearLayers();
+                    const val = textarea.value.trim();
+                    routeLayer.clearLayers();
+                    routeCoordinates.length = 0;
 
-                    if (existingData && existingData !== '{}') {
-                        const geojson = JSON.parse(existingData);
+                    if (val && val !== '{}') {
+                        const json = JSON.parse(val);
+                        if (json.type === 'LineString' && json.coordinates) {
+                            json.coordinates.forEach(c => routeCoordinates.push(c));
 
-                        // Soporte para LineString directo
-                        if (geojson.type === 'LineString' && geojson.coordinates && geojson.coordinates.length > 0) {
-                            const latLngs = geojson.coordinates.map(coord => [coord[1], coord[0]]);
-                            const polyline = L.polyline(latLngs, { color: '#e74c3c', weight: 4 });
-                            polyline.addTo(drawnItems);
-                            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+                            // Dibujar
+                            const latLngs = routeCoordinates.map(c => [c[1], c[0]]);
+                            currentLine = L.polyline(latLngs, { color: '#e74c3c', weight: 4 });
+                            currentLine.addTo(routeLayer);
+                            map.fitBounds(currentLine.getBounds(), { padding: [20, 20] });
                         }
                     }
                 } catch (e) {
-                    console.log('Error al parsear JSON existente:', e);
+                    console.error("Error loading route:", e);
                 }
             }
 
-            // Cargar datos iniciales
-            loadFromTextarea();
-
-            const btnDraw = document.getElementById('btn-draw-' + fieldName);
-            const btnClear = document.getElementById('btn-clear-' + fieldName);
-            const btnSave = document.getElementById('btn-save-' + fieldName);
-            const btnFormat = document.getElementById('btn-format-' + fieldName);
-
-            // Logica para Formatear/Extraer JSON
-            btnFormat.addEventListener('click', function (e) {
-                e.preventDefault();
+            function loadStopsData() {
+                if (!paradasInput) return;
                 try {
-                    const rawData = textarea.value.trim();
-                    if (!rawData) {
-                        alert('Primero pega el JSON FeatureCollection en el cuadro de texto.');
-                        return;
-                    }
+                    const val = paradasInput.value.trim();
+                    stopsLayer.clearLayers();
+                    stopsCoordinates.length = 0;
+                    stopMarkers.length = 0;
 
-                    const json = JSON.parse(rawData);
-                    let geometry = null;
-
-                    // Caso 1: FeatureCollection
-                    if (json.type === 'FeatureCollection' && json.features && json.features.length > 0) {
-                        geometry = json.features[0].geometry;
+                    if (val && val !== '[]' && val !== '{}' && val != 'None') {
+                        // Manejar si viene como string JSON limpio
+                        let json = JSON.parse(val);
+                        if (Array.isArray(json)) {
+                            json.forEach(c => {
+                                stopsCoordinates.push(c);
+                                addStopMarker([c[1], c[0]], false); // false = don't push to coords again
+                            });
+                        }
                     }
-                    // Caso 2: Feature individual
-                    else if (json.type === 'Feature' && json.geometry) {
-                        geometry = json.geometry;
-                    }
-
-                    if (geometry && geometry.type === 'LineString') {
-                        // Formatear bonito
-                        textarea.value = JSON.stringify(geometry, null, 2);
-                        // Actualizar mapa
-                        loadFromTextarea();
-                        alert('¡Geometría extraída correctamente!');
-                    } else {
-                        alert('No se encontró una geometría LineString válida en el JSON.');
-                    }
-                } catch (err) {
-                    alert('JSON inválido. Verifica que hayas copiado todo correctamente.');
-                    console.error(err);
+                } catch (e) {
+                    console.error("Error loading stops - value:", paradasInput.value, e);
                 }
-            });
+            }
 
-            btnDraw.addEventListener('click', function (e) {
-                e.preventDefault();
-                isDrawing = !isDrawing;
-                this.textContent = isDrawing ? 'Dibujando...' : 'Dibujar Ruta';
-                this.classList.toggle('active', isDrawing);
-                if (isDrawing) {
-                    coordinates.length = 0;
-                    markers.forEach(m => drawnItems.removeLayer(m));
-                    markers.length = 0;
-                    if (currentLine) {
-                        drawnItems.removeLayer(currentLine);
-                        currentLine = null;
-                    }
-                }
-            });
-
-            btnClear.addEventListener('click', function (e) {
-                e.preventDefault();
-                coordinates.length = 0;
-                markers.forEach(m => drawnItems.removeLayer(m));
-                markers.length = 0;
-                if (currentLine) {
-                    drawnItems.removeLayer(currentLine);
-                    currentLine = null;
-                }
-                drawnItems.clearLayers();
-                isDrawing = false;
-                btnDraw.textContent = 'Dibujar Ruta';
-                btnDraw.classList.remove('active');
-                textarea.value = '{}';
-            });
-
-            btnSave.addEventListener('click', function (e) {
-                e.preventDefault();
-                if (coordinates.length >= 2) {
-                    const geojson = {
-                        type: 'LineString',
-                        coordinates: coordinates.slice()
-                    };
-                    textarea.value = JSON.stringify(geojson, null, 2);
-                    isDrawing = false;
-                    btnDraw.textContent = 'Dibujar Ruta';
-                    btnDraw.classList.remove('active');
-                    alert('Ruta guardada: ' + coordinates.length + ' puntos');
-                } else {
-                    alert('Necesitas al menos 2 puntos para crear una ruta');
-                }
-            });
-
-            map.on('click', function (e) {
-                if (!isDrawing) return;
-
-                const latlng = e.latlng;
-                coordinates.push([latlng.lng, latlng.lat]);
-
-                const marker = L.circleMarker([latlng.lat, latlng.lng], {
-                    radius: 6,
-                    fillColor: '#e74c3c',
-                    color: '#c0392b',
+            function addStopMarker(latlng, pushData = true) {
+                const marker = L.circleMarker(latlng, {
+                    radius: 8,
+                    fillColor: '#9c27b0',
+                    color: '#fff',
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.9
-                }).addTo(drawnItems);
-                markers.push(marker);
+                }).addTo(stopsLayer);
 
-                if (coordinates.length > 1) {
-                    if (currentLine) {
-                        drawnItems.removeLayer(currentLine);
-                    }
-                    const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-                    currentLine = L.polyline(latLngs, { color: '#e74c3c', weight: 4 });
-                    currentLine.addTo(drawnItems);
+                stopMarkers.push(marker);
+
+                if (pushData) {
+                    stopsCoordinates.push([latlng[1], latlng[0]]); // lng, lat
                 }
+            }
+
+            // --- Funciones de Actualización UI ---
+
+            function updateUI() {
+                // Actualizar estilo de botones de modo
+                if (btnModeRoute) {
+                    btnModeRoute.style.opacity = currentMode === 'route' ? '1' : '0.5';
+                    btnModeRoute.style.border = currentMode === 'route' ? '2px solid white' : 'none';
+                }
+                if (btnModeStops) {
+                    btnModeStops.style.opacity = currentMode === 'stops' ? '1' : '0.5';
+                    btnModeStops.style.border = currentMode === 'stops' ? '2px solid white' : 'none';
+                }
+
+                // Actualizar botón Draw
+                if (btnDraw) {
+                    btnDraw.classList.toggle('active', isDrawing);
+                    if (isDrawing) {
+                        btnDraw.textContent = currentMode === 'route' ? '✏️ Dibujando Ruta...' : '📍 Agregando Paradas...';
+                        btnDraw.style.background = '#ff9800';
+                    } else {
+                        btnDraw.textContent = currentMode === 'route' ? '✏️ Dibujar Ruta' : '📍 Agregar Paradas';
+                        btnDraw.style.background = '#43a047';
+                    }
+                }
+
+                updateUndoButton();
+            }
+
+            function updateUndoButton() {
+                if (!btnUndo) return;
+                let hasHistory = false;
+                if (currentMode === 'route') hasHistory = routeCoordinates.length > 0;
+                if (currentMode === 'stops') hasHistory = stopsCoordinates.length > 0;
+                btnUndo.disabled = !hasHistory;
+            }
+
+            // --- Event Listeners ---
+
+            // Cambio de Modo
+            if (btnModeRoute) btnModeRoute.addEventListener('click', () => {
+                currentMode = 'route';
+                isDrawing = false; // Stop drawing when switching mode
+                updateUI();
+            });
+            if (btnModeStops) btnModeStops.addEventListener('click', () => {
+                currentMode = 'stops';
+                isDrawing = false;
+                updateUI();
             });
 
-            setTimeout(function () {
-                map.invalidateSize();
-            }, 100);
+            // Botón Dibujar
+            if (btnDraw) {
+                btnDraw.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    isDrawing = !isDrawing;
+                    updateUI();
+                });
+            }
+
+            // Botón Guardar
+            if (btnSave) {
+                btnSave.addEventListener('click', (e) => {
+                    e.preventDefault();
+
+                    // Guardar Ruta
+                    if (routeCoordinates.length >= 2) {
+                        const geojson = { type: 'LineString', coordinates: routeCoordinates };
+                        textarea.value = JSON.stringify(geojson);
+                    } else if (routeCoordinates.length === 0) {
+                        textarea.value = ''; // Limpiar si borró todo
+                    }
+
+                    // Guardar Paradas
+                    if (paradasInput) {
+                        if (stopsCoordinates.length > 0) {
+                            paradasInput.value = JSON.stringify(stopsCoordinates);
+                        } else {
+                            paradasInput.value = '[]';
+                        }
+                    }
+
+                    isDrawing = false;
+                    updateUI();
+                    alert(`¡Guardado exitoso!\n- Ruta: ${routeCoordinates.length} puntos\n- Paradas: ${stopsCoordinates.length} marcadas\n\n(No olvides dar click en 'Guardar' al final del formulario)`);
+                });
+            }
+
+            // Botón Limpiar
+            if (btnClear) {
+                btnClear.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (confirm(`¿Estás seguro de LIMPIAR todos los datos del modo ${currentMode === 'route' ? 'RUTA' : 'PARADAS'}?`)) {
+                        if (currentMode === 'route') {
+                            routeCoordinates.length = 0;
+                            routeLayer.clearLayers();
+                            currentLine = null;
+                            textarea.value = '{}';
+                        } else {
+                            stopsCoordinates.length = 0;
+                            stopMarkers.length = 0;
+                            stopsLayer.clearLayers();
+                            if (paradasInput) paradasInput.value = '[]';
+                        }
+                        updateUI();
+                    }
+                });
+            }
+
+            // Botón Deshacer
+            if (btnUndo) {
+                btnUndo.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (currentMode === 'route' && routeCoordinates.length > 0) {
+                        routeCoordinates.pop();
+                        // Redibujar
+                        if (currentLine) routeLayer.removeLayer(currentLine);
+                        if (routeCoordinates.length > 1) {
+                            const latLngs = routeCoordinates.map(c => [c[1], c[0]]);
+                            currentLine = L.polyline(latLngs, { color: '#e74c3c', weight: 4 }).addTo(routeLayer);
+                        } else {
+                            currentLine = null;
+                        }
+                    } else if (currentMode === 'stops' && stopsCoordinates.length > 0) {
+                        stopsCoordinates.pop();
+                        const marker = stopMarkers.pop();
+                        if (marker) stopsLayer.removeLayer(marker);
+                    }
+                    updateUI();
+                });
+            }
+
+            // Click en Mapa
+            map.on('click', (e) => {
+                if (!isDrawing) return;
+
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+
+                if (currentMode === 'route') {
+                    routeCoordinates.push([lng, lat]);
+
+                    // Feedback visual inmediato (círculo pequeño)
+                    L.circleMarker([lat, lng], { radius: 2, color: 'red' }).addTo(routeLayer);
+
+                    if (routeCoordinates.length > 1) {
+                        if (currentLine) routeLayer.removeLayer(currentLine);
+                        const latLngs = routeCoordinates.map(c => [c[1], c[0]]);
+                        currentLine = L.polyline(latLngs, { color: '#e74c3c', weight: 4 }).addTo(routeLayer);
+                    }
+                } else {
+                    // Stops
+                    addStopMarker([lat, lng]);
+                }
+                updateUI();
+            });
+
+            // Inicializar
+            loadRouteData();
+            // Pequeño delay para asegurar que el DOM del admin haya cargado el otro campo si es inline (aunque hidden input debe estar ahi)
+            setTimeout(loadStopsData, 500);
+            updateUI();
         }
 
         if (document.readyState === 'loading') {

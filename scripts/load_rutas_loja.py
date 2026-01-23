@@ -47,6 +47,10 @@ def create_lineas_loja():
             'destino': 'Centro Histórico',
             'descripcion': 'Ruta principal del centro histórico de Loja',
             'tarifa_base': Decimal('0.50'),
+            'tarifa_preferencial': Decimal('0.25'),
+            'horario_inicio': '06:00',
+            'horario_fin': '22:00',
+            'intervalo_minutos': 10,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -64,6 +68,10 @@ def create_lineas_loja():
             'destino': 'Barrio Sauces',
             'descripcion': 'Ruta hacia el barrio residencial de Sauces',
             'tarifa_base': Decimal('0.60'),
+            'tarifa_preferencial': Decimal('0.30'),
+            'horario_inicio': '06:30',
+            'horario_fin': '21:30',
+            'intervalo_minutos': 15,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -81,6 +89,10 @@ def create_lineas_loja():
             'destino': 'Perpetuo Socorro',
             'descripcion': 'Ruta hacia el barrio Perpetuo Socorro',
             'tarifa_base': Decimal('0.50'),
+            'tarifa_preferencial': Decimal('0.25'),
+            'horario_inicio': '07:00',
+            'horario_fin': '20:00',
+            'intervalo_minutos': 20,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -98,6 +110,10 @@ def create_lineas_loja():
             'destino': 'Universidad Técnica Particular',
             'descripcion': 'Ruta a la universidad técnica',
             'tarifa_base': Decimal('0.70'),
+            'tarifa_preferencial': Decimal('0.35'),
+            'horario_inicio': '06:00',
+            'horario_fin': '23:00',
+            'intervalo_minutos': 8,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -115,6 +131,10 @@ def create_lineas_loja():
             'destino': 'Cariamanga',
             'descripcion': 'Ruta hacia Cariamanga y alrededores',
             'tarifa_base': Decimal('1.00'),
+            'tarifa_preferencial': Decimal('0.50'),
+            'horario_inicio': '05:00',
+            'horario_fin': '19:00',
+            'intervalo_minutos': 60,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -132,6 +152,10 @@ def create_lineas_loja():
             'destino': 'San Cayetano',
             'descripcion': 'Ruta al barrio San Cayetano',
             'tarifa_base': Decimal('0.60'),
+            'tarifa_preferencial': Decimal('0.30'),
+            'horario_inicio': '06:45',
+            'horario_fin': '21:00',
+            'intervalo_minutos': 20,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -149,6 +173,10 @@ def create_lineas_loja():
             'destino': 'Jipijapa',
             'descripcion': 'Ruta hacia Jipijapa',
             'tarifa_base': Decimal('0.80'),
+            'tarifa_preferencial': Decimal('0.40'),
+            'horario_inicio': '06:00',
+            'horario_fin': '20:30',
+            'intervalo_minutos': 30,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -166,6 +194,10 @@ def create_lineas_loja():
             'destino': 'Barrio Argelia',
             'descripcion': 'Ruta al barrio residencial Argelia',
             'tarifa_base': Decimal('0.50'),
+            'tarifa_preferencial': Decimal('0.25'),
+            'horario_inicio': '06:30',
+            'horario_fin': '22:00',
+            'intervalo_minutos': 12,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -183,6 +215,10 @@ def create_lineas_loja():
             'destino': 'Motupe',
             'descripcion': 'Ruta hacia el sector de Motupe',
             'tarifa_base': Decimal('0.65'),
+            'tarifa_preferencial': Decimal('0.35'),
+            'horario_inicio': '06:15',
+            'horario_fin': '21:15',
+            'intervalo_minutos': 25,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -200,6 +236,10 @@ def create_lineas_loja():
             'destino': 'Zamora',
             'descripcion': 'Ruta hacia Zamora (conexión regional)',
             'tarifa_base': Decimal('2.50'),
+            'tarifa_preferencial': Decimal('1.25'),
+            'horario_inicio': '05:00',
+            'horario_fin': '23:00',
+            'intervalo_minutos': 45,
             'geom': {
                 'type': 'LineString',
                 'coordinates': [
@@ -222,6 +262,10 @@ def create_lineas_loja():
                 'destino': linea_data['destino'],
                 'descripcion': linea_data['descripcion'],
                 'tarifa_base': linea_data['tarifa_base'],
+                'tarifa_preferencial': linea_data['tarifa_preferencial'],
+                'horario_inicio': linea_data['horario_inicio'],
+                'horario_fin': linea_data['horario_fin'],
+                'intervalo_minutos': linea_data['intervalo_minutos'],
                 'geom': linea_data['geom'],
                 'activo': True,
             }
@@ -229,7 +273,7 @@ def create_lineas_loja():
         
         if created:
             created_count += 1
-            print(f"✓ Creada: {linea.nombre} ({linea.origen} → {linea.destino}) - ${linea.tarifa_base}")
+            print(f"✓ Creada: {linea.nombre} ({linea.origen} → {linea.destino}) - Frecuencia: {linea.intervalo_minutos}min")
         else:
             print(f"⊘ Ya existe: {linea.nombre}")
     

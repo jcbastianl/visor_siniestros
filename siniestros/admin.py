@@ -112,7 +112,8 @@ class SiniestroAdmin(admin.ModelAdmin):
                 return render(request, 'admin/siniestros/csv_upload.html', context)
             
             try:
-                results = import_csv(csv_file, clear_existing=clear_existing)
+                anio_filtro = request.POST.get('anio_filtro')
+                results = import_csv(csv_file, clear_existing=clear_existing, anio_filtro=anio_filtro)
                 context['results'] = results
                 
                 if results['errores']:

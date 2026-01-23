@@ -15,6 +15,16 @@ class LineaBus(models.Model):
     destino = models.CharField(max_length=100, default="", help_text="Punto final o terminal de la línea.")
     descripcion = models.TextField(blank=True, null=True, help_text="Detalles o información adicional sobre la ruta.")
     tarifa_base = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, help_text="Tarifa base del pasaje.")
+    tarifa_preferencial = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, help_text="Tarifa preferencial/reducida (tercera edad, discapacidad, etc.).")
+    paradas = models.JSONField(
+        default=list,
+        blank=True,
+        null=True,
+        help_text="Lista de paradas en formato [[lng, lat, 'nombre opcional'], ...]"
+    )
+    horario_inicio = models.TimeField(null=True, blank=True, help_text="Hora de inicio del servicio (ej. 06:00:00)")
+    horario_fin = models.TimeField(null=True, blank=True, help_text="Hora de fin del servicio (ej. 22:30:00)")
+    intervalo_minutos = models.IntegerField(default=0, help_text="Frecuencia/Intervalo de paso en minutos")
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)

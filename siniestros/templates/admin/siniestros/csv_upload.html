@@ -291,9 +291,19 @@
                     <td>Exceso de velocidad</td>
                 </tr>
                 <tr>
-                    <td><code>victimas</code></td>
-                    <td>JSON con víctimas (opcional)</td>
-                    <td>[{"edad":25,"condicion":"LESIONADO",...}]</td>
+                    <td><code>victima1_edad</code></td>
+                    <td>Edad víctima 1 (opcional)</td>
+                    <td>25</td>
+                </tr>
+                <tr>
+                    <td><code>victima1_condicion</code></td>
+                    <td>Condición víctima 1</td>
+                    <td>LESIONADO, FALLECIDO, ILESO</td>
+                </tr>
+                <tr>
+                    <td><code>victimaX_...</code></td>
+                    <td>Datos para victima 2, 3, etc.</td>
+                    <td>victima2_edad, victima2_sexo...</td>
                 </tr>
             </tbody>
         </table>
@@ -334,6 +344,15 @@
         <div class="form-group">
             <label for="csv_file">📁 Seleccionar archivo CSV:</label>
             <input type="file" name="csv_file" id="csv_file" accept=".csv" required class="file-input">
+        </div>
+
+        <div class="form-group">
+            <label for="anio_filtro">📅 Filtrar por Año (Opcional):</label>
+            <input type="number" name="anio_filtro" id="anio_filtro" class="file-input"
+                style="padding: 10px; background: #0d1b2a; border: 1px solid #0f3460; color: white;"
+                placeholder="Ej: 2026">
+            <small style="color: #aaa; display: block; margin-top: 5px;">Si se especifica, solo se importarán los
+                registros de este año.</small>
         </div>
 
         <div class="form-group">

@@ -15,6 +15,7 @@ class LineaBusAdminForm(forms.ModelForm):
         widgets = {
             'color': ColorPickerWidget(),
             'geom': GeoJSONMapWidget(),
+            'paradas': forms.HiddenInput(attrs={'id': 'id_paradas'}),
         }
 
 
