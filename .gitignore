@@ -173,3 +173,8 @@ cython_debug/
 
 # End of https://www.toptal.com/developers/gitignore/api/django
 db.sqlite3
+
+# Migration artifacts
+datadump.json
+scripts/fix_db.sh
+scripts/fix_db_user.sh
