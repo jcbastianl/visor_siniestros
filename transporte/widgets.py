@@ -45,12 +45,4 @@ class GeoJSONMapWidget(forms.Widget):
             return json.dumps(value, indent=2) if value else '{}'
         return value
     
-    def value_from_datadict(self, data, files, name):
-        """Obtiene el valor del POST data."""
-        value = data.get(name, '{}')
-        if not value or value.strip() == '':
-            return {}
-        try:
-            return json.loads(value)
-        except json.JSONDecodeError:
-            return {}
+

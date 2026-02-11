@@ -1,17 +1,17 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
 
-{% block title %}Importar Siniestros desde CSV{% endblock %}
+{% block title %}Importar Siniestros{% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
 <style>
-    .csv-container {
-        max-width: 1000px;
+    .import-container {
+        max-width: 1100px;
         margin: 0 auto;
     }
 
-    .csv-card {
+    .import-card {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         border-radius: 12px;
         padding: 24px;
@@ -20,7 +20,7 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
-    .csv-card h3 {
+    .import-card h3 {
         color: #00d9ff;
         margin-top: 0;
         font-size: 1.3em;
@@ -29,12 +29,11 @@
         margin-bottom: 16px;
     }
 
-    .csv-card p,
-    .csv-card li {
+    .import-card p, .import-card li, .import-card td {
         color: #e0e0e0;
     }
 
-    .csv-table {
+    .import-table {
         width: 100%;
         border-collapse: collapse;
         margin: 16px 0;
@@ -43,57 +42,81 @@
         overflow: hidden;
     }
 
-    .csv-table thead tr {
+    .import-table thead tr {
         background: linear-gradient(90deg, #e94560 0%, #ff6b6b 100%);
     }
 
-    .csv-table th {
-        padding: 14px 12px;
+    .import-table th {
+        padding: 12px 10px;
         text-align: left;
         color: #fff;
         font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.85em;
+        font-size: 0.8em;
         letter-spacing: 0.5px;
     }
 
-    .csv-table td {
-        padding: 12px;
+    .import-table td {
+        padding: 10px;
         border-bottom: 1px solid #1f4068;
-        color: #e0e0e0;
     }
 
-    .csv-table tbody tr:hover {
+    .import-table tbody tr:hover {
         background: #1f4068;
     }
 
-    .csv-table code {
+    .import-table code {
         background: #0f3460;
         color: #00d9ff;
-        padding: 4px 8px;
+        padding: 3px 6px;
         border-radius: 4px;
         font-family: 'Fira Code', monospace;
-        font-size: 0.9em;
+        font-size: 0.85em;
     }
 
-    .valores-permitidos {
+    .badge-required {
+        background: #e94560;
+        color: #fff;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75em;
+        font-weight: 600;
+    }
+
+    .badge-optional {
+        background: #0f3460;
+        color: #aaa;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75em;
+    }
+
+    .section-title {
+        color: #ffc107;
+        margin: 20px 0 10px 0;
+        font-size: 1em;
+        padding-left: 8px;
+        border-left: 3px solid #ffc107;
+    }
+
+    .valores-box {
         background: #0d1b2a;
         padding: 16px;
         border-radius: 8px;
         margin-top: 16px;
     }
 
-    .valores-permitidos h4 {
+    .valores-box h4 {
         color: #ffc107;
         margin-top: 0;
         margin-bottom: 12px;
     }
 
-    .valores-permitidos li {
-        margin-bottom: 8px;
+    .valores-box li {
+        margin-bottom: 6px;
     }
 
-    .valores-permitidos strong {
+    .valores-box strong {
         color: #00d9ff;
     }
 
@@ -113,18 +136,9 @@
         border: 1px solid #ffc107;
     }
 
-    .results-card h3 {
-        color: #4ade80;
-        margin-top: 0;
-    }
-
-    .results-card ul {
-        color: #e0e0e0;
-    }
-
-    .results-card strong {
-        color: #fff;
-    }
+    .results-card h3 { color: #4ade80; margin-top: 0; }
+    .results-card ul { color: #e0e0e0; }
+    .results-card strong { color: #fff; }
 
     .error-list {
         max-height: 200px;
@@ -135,10 +149,7 @@
         margin-top: 12px;
     }
 
-    .error-list li {
-        color: #ff6b6b;
-        margin-bottom: 6px;
-    }
+    .error-list li { color: #ff6b6b; margin-bottom: 6px; }
 
     .form-card {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -236,99 +247,197 @@
     .btn-secondary:hover {
         background: #1f4068;
     }
+
+    .tabs { display: flex; gap: 0; margin-bottom: 0; }
+    .tab {
+        padding: 10px 20px;
+        background: #0d1b2a;
+        color: #aaa;
+        cursor: pointer;
+        border: 1px solid #0f3460;
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .tab.active { background: #16213e; color: #00d9ff; border-color: #00d9ff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="csv-container">
-    <h1 style="color: #fff; margin-bottom: 24px;">📊 Importar Siniestros desde CSV</h1>
+<div class="import-container">
+    <h1 style="color: #fff; margin-bottom: 24px;">Importar Siniestros desde CSV / Excel</h1>
 
-    <div class="csv-card">
-        <h3>📋 Formato del archivo CSV</h3>
-        <p>El archivo debe tener las siguientes columnas:</p>
-        <table class="csv-table">
-            <thead>
-                <tr>
-                    <th>Columna</th>
-                    <th>Descripción</th>
-                    <th>Ejemplo</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code>fecha_hora</code></td>
-                    <td>Fecha y hora (obligatorio)</td>
-                    <td>2024-03-15 14:30:00</td>
-                </tr>
-                <tr>
-                    <td><code>latitud</code></td>
-                    <td>Coordenada latitud (obligatorio)</td>
-                    <td>-4.0025</td>
-                </tr>
-                <tr>
-                    <td><code>longitud</code></td>
-                    <td>Coordenada longitud (obligatorio)</td>
-                    <td>-79.2015</td>
-                </tr>
-                <tr>
-                    <td><code>via</code></td>
-                    <td>Nombre de la vía</td>
-                    <td>Av. Universitaria</td>
-                </tr>
-                <tr>
-                    <td><code>grado_severidad</code></td>
-                    <td>Severidad (obligatorio)</td>
-                    <td>CON_FALLECIDOS, CON_LESIONADOS, SOLO_DANOS</td>
-                </tr>
-                <tr>
-                    <td><code>tipo_siniestro</code></td>
-                    <td>Tipo de siniestro</td>
-                    <td>Choque Vehicular</td>
-                </tr>
-                <tr>
-                    <td><code>causa_probable</code></td>
-                    <td>Causa probable</td>
-                    <td>Exceso de velocidad</td>
-                </tr>
-                <tr>
-                    <td><code>victima1_edad</code></td>
-                    <td>Edad víctima 1 (opcional)</td>
-                    <td>25</td>
-                </tr>
-                <tr>
-                    <td><code>victima1_condicion</code></td>
-                    <td>Condición víctima 1</td>
-                    <td>LESIONADO, FALLECIDO, ILESO</td>
-                </tr>
-                <tr>
-                    <td><code>victimaX_...</code></td>
-                    <td>Datos para victima 2, 3, etc.</td>
-                    <td>victima2_edad, victima2_sexo...</td>
-                </tr>
-            </tbody>
-        </table>
+    <!-- TABS: Formato Excel vs CSV -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('excel')">Formato Excel (Institucional)</div>
+        <div class="tab" onclick="switchTab('csv')">Formato CSV (Simplificado)</div>
+    </div>
 
-        <div class="valores-permitidos">
-            <h4>🏷️ Valores permitidos para víctimas:</h4>
-            <ul>
-                <li><strong>condicion:</strong> FALLECIDO, LESIONADO, ILESO</li>
-                <li><strong>sexo:</strong> HOMBRE, MUJER, NO_REGISTRA</li>
-                <li><strong>actor_vial:</strong> PEATON, MOTOCICLETA, VEH_LIVIANO, CICLISTA, SCOOTER, OTRO</li>
-            </ul>
+    <!-- TAB: FORMATO EXCEL -->
+    <div id="tab-excel" class="tab-content active">
+        <div class="import-card" style="border-radius: 0 8px 12px 12px;">
+            <h3>Formato Excel de la Instituci&oacute;n</h3>
+            <p>El archivo Excel original (~200 columnas) se importa autom&aacute;ticamente. El sistema busca las siguientes columnas por nombre:</p>
+
+            <h4 class="section-title">Campos Obligatorios</h4>
+            <table class="import-table">
+                <thead>
+                    <tr>
+                        <th>Columna en Excel</th>
+                        <th>Descripci&oacute;n</th>
+                        <th>Ejemplo</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>FECHA</code></td>
+                        <td>Fecha del siniestro (DD/MM/YYYY o datetime de Excel)</td>
+                        <td>15/03/2024</td>
+                        <td><span class="badge-required">Obligatorio</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>HORA</code></td>
+                        <td>Hora del siniestro (HH:MM:SS)</td>
+                        <td>14:30:00</td>
+                        <td><span class="badge-required">Obligatorio</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>LATITUD</code></td>
+                        <td>Coordenada latitud</td>
+                        <td>-4.0025</td>
+                        <td><span class="badge-required">Obligatorio</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>LONGITUD</code></td>
+                        <td>Coordenada longitud</td>
+                        <td>-79.2015</td>
+                        <td><span class="badge-required">Obligatorio</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>RESULTADOS&nbsp;&nbsp;CONSECUENCIAS</code></td>
+                        <td>Determina la severidad del siniestro</td>
+                        <td>HERIDO / FALLECIDO / SOLO DA&Ntilde;OS</td>
+                        <td><span class="badge-required">Obligatorio</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4 class="section-title">Clasificaci&oacute;n</h4>
+            <table class="import-table">
+                <thead><tr><th>Columna</th><th>Descripci&oacute;n</th><th>Ejemplo</th><th>Estado</th></tr></thead>
+                <tbody>
+                    <tr><td><code>TIPOLOG&Iacute;A</code></td><td>Tipo de siniestro (se crea autom&aacute;ticamente)</td><td>CHOQUE LATERAL</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>CAUSAS</code></td><td>Causa probable (se crea autom&aacute;ticamente)</td><td>EXCESO DE VELOCIDAD</td><td><span class="badge-optional">Opcional</span></td></tr>
+                </tbody>
+            </table>
+
+            <h4 class="section-title">Ubicaci&oacute;n</h4>
+            <table class="import-table">
+                <thead><tr><th>Columna</th><th>Campo en BD</th><th>Estado</th></tr></thead>
+                <tbody>
+                    <tr><td><code>CALLE / AV. PRINCIPAL (1)</code></td><td>via, calle_principal</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>CALLE / AV. PRINCIPAL (2)</code></td><td>calle_secundaria</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>ZONA</code></td><td>zona</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>BARRIO</code></td><td>barrio</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>PARROQUIA URBANA</code></td><td>parroquia</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>PARROQUIA RURAL</code></td><td>parroquia_rural</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>DIRECCION REGISTRADA COMPLETA</code></td><td>direccion_completa</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>REFERENCIA</code></td><td>referencia</td><td><span class="badge-optional">Opcional</span></td></tr>
+                </tbody>
+            </table>
+
+            <h4 class="section-title">Condiciones del Evento</h4>
+            <table class="import-table">
+                <thead><tr><th>Columna</th><th>Campo en BD</th><th>Estado</th></tr></thead>
+                <tbody>
+                    <tr><td><code>CONDICI&Oacute;N CALZADA</code></td><td>condicion_calzada</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>CONDICI&Oacute;N ATMOSF&Eacute;RICA SINET</code></td><td>condicion_atmosferica</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>CONDICION V&Iacute;A</code></td><td>condicion_via</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>LUZ ARTIFICIAL</code></td><td>luz_artificial</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>LUGAR EN LA V&Iacute;A</code></td><td>lugar_en_via</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>SE&Ntilde;ALIZACI&Oacute;N EXISTENTE</code></td><td>senalizacion_existente</td><td><span class="badge-optional">Opcional</span></td></tr>
+                </tbody>
+            </table>
+
+            <h4 class="section-title">Veh&iacute;culos y Contadores</h4>
+            <table class="import-table">
+                <thead><tr><th>Columna</th><th>Campo en BD</th><th>Estado</th></tr></thead>
+                <tbody>
+                    <tr><td><code>VEH&Iacute;CULOS INVOLUCRADOS EN EL SINIESTRO</code></td><td>num_vehiculos_involucrados</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>PARTICULAR</code></td><td>vehiculos_particular</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>P&Uacute;BLICO</code></td><td>vehiculos_publico</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>COMERCIAL</code></td><td>vehiculos_comercial</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>TIPO DE VEH&Iacute;CULO REGISTRADO 1-6</code></td><td>tipos_vehiculos</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>NRO. HERIDOS</code></td><td>num_heridos</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>NRO. FALLECIDOS</code></td><td>num_fallecidos</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>NRO. PRUEBAS DE ALCOHOTEST</code></td><td>num_pruebas_alcohotest</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>PERSONAS DETENIDAS</code></td><td>num_personas_detenidas</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>VEH&Iacute;CULOS RETENIDOS</code></td><td>vehiculos_retenidos</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>DA&Ntilde;OS OCASIONADOS AL BIEN P&Uacute;BLICO</code></td><td>tiene_danos_bien_publico (SI/NO)</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>DESCRIPCI&Oacute;N DA&Ntilde;O AL BIEN P&Uacute;BLICO</code></td><td>descripcion_dano_bien_publico</td><td><span class="badge-optional">Opcional</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB: FORMATO CSV -->
+    <div id="tab-csv" class="tab-content">
+        <div class="import-card" style="border-radius: 0 8px 12px 12px;">
+            <h3>Formato CSV Simplificado</h3>
+            <p>Para importaciones manuales con formato simple. Las columnas deben tener estos nombres exactos:</p>
+
+            <table class="import-table">
+                <thead>
+                    <tr>
+                        <th>Columna</th>
+                        <th>Descripci&oacute;n</th>
+                        <th>Ejemplo</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>fecha_hora</code></td><td>Fecha y hora</td><td>2024-03-15 14:30:00</td><td><span class="badge-required">Obligatorio</span></td></tr>
+                    <tr><td><code>latitud</code></td><td>Coordenada latitud</td><td>-4.0025</td><td><span class="badge-required">Obligatorio</span></td></tr>
+                    <tr><td><code>longitud</code></td><td>Coordenada longitud</td><td>-79.2015</td><td><span class="badge-required">Obligatorio</span></td></tr>
+                    <tr><td><code>grado_severidad</code></td><td>Severidad del siniestro</td><td>CON_LESIONADOS</td><td><span class="badge-required">Obligatorio</span></td></tr>
+                    <tr><td><code>via</code></td><td>Nombre de la v&iacute;a</td><td>Av. Universitaria</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>tipo_siniestro</code></td><td>Tipo de siniestro</td><td>Choque Vehicular</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>causa_probable</code></td><td>Causa probable</td><td>Exceso de velocidad</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>victima1_condicion</code></td><td>Condici&oacute;n v&iacute;ctima 1</td><td>LESIONADO</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>victima1_edad</code></td><td>Edad v&iacute;ctima 1</td><td>25</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>victima1_sexo</code></td><td>Sexo v&iacute;ctima 1</td><td>HOMBRE</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>victima1_actor_vial</code></td><td>Actor vial v&iacute;ctima 1</td><td>MOTOCICLETA</td><td><span class="badge-optional">Opcional</span></td></tr>
+                    <tr><td><code>victima2_*</code></td><td>Datos para v&iacute;ctima 2, 3, etc.</td><td>victima2_condicion, victima2_edad...</td><td><span class="badge-optional">Opcional</span></td></tr>
+                </tbody>
+            </table>
+
+            <div class="valores-box">
+                <h4>Valores permitidos:</h4>
+                <ul>
+                    <li><strong>grado_severidad:</strong> CON_FALLECIDOS, CON_LESIONADOS, SOLO_DANOS</li>
+                    <li><strong>condicion:</strong> FALLECIDO, LESIONADO, ILESO</li>
+                    <li><strong>sexo:</strong> HOMBRE, MUJER, NO_REGISTRA</li>
+                    <li><strong>actor_vial:</strong> PEATON, MOTOCICLETA, VEH_LIVIANO, CICLISTA, SCOOTER, OTRO</li>
+                </ul>
+            </div>
         </div>
     </div>
 
     {% if results %}
     <div class="results-card {% if results.errores %}results-warning{% else %}results-success{% endif %}">
-        <h3>✅ Resultados de la importación</h3>
+        <h3>Resultados de la importaci&oacute;n</h3>
         <ul>
             <li><strong>Filas procesadas:</strong> {{ results.filas_procesadas }}</li>
             <li><strong>Siniestros creados:</strong> {{ results.siniestros_creados }}</li>
-            <li><strong>Víctimas creadas:</strong> {{ results.victimas_creadas }}</li>
+            <li><strong>V&iacute;ctimas creadas:</strong> {{ results.victimas_creadas }}</li>
         </ul>
 
         {% if results.errores %}
-        <h4 style="color: #ffc107; margin-top: 16px;">⚠️ Errores encontrados:</h4>
+        <h4 style="color: #ffc107; margin-top: 16px;">Errores encontrados:</h4>
         <ul class="error-list">
             {% for error in results.errores %}
             <li>{{ error }}</li>
@@ -342,37 +451,46 @@
         {% csrf_token %}
 
         <div class="form-group">
-            <label for="csv_file">📁 Seleccionar archivo CSV:</label>
-            <input type="file" name="csv_file" id="csv_file" accept=".csv" required class="file-input">
+            <label for="csv_file">Seleccionar archivo CSV o Excel:</label>
+            <input type="file" name="csv_file" id="csv_file" accept=".csv,.xlsx,.xls" required class="file-input">
         </div>
 
         <div class="form-group">
-            <label for="anio_filtro">📅 Filtrar por Año (Opcional):</label>
+            <label for="anio_filtro">Filtrar por A&ntilde;o (Opcional):</label>
             <input type="number" name="anio_filtro" id="anio_filtro" class="file-input"
                 style="padding: 10px; background: #0d1b2a; border: 1px solid #0f3460; color: white;"
-                placeholder="Ej: 2026">
-            <small style="color: #aaa; display: block; margin-top: 5px;">Si se especifica, solo se importarán los
-                registros de este año.</small>
+                placeholder="Ej: 2024">
+            <small style="color: #aaa; display: block; margin-top: 5px;">Si se especifica, solo se importar&aacute;n los
+                registros de este a&ntilde;o.</small>
         </div>
 
         <div class="form-group">
             <label class="checkbox-group">
                 <input type="checkbox" name="clear_existing">
-                <span>🗑️ Eliminar datos existentes antes de importar</span>
+                <span>Eliminar datos existentes antes de importar</span>
             </label>
             <small class="checkbox-warning">
-                ⚠️ Esta opción eliminará TODOS los siniestros y víctimas existentes
+                ADVERTENCIA: Esta opci&oacute;n eliminar&aacute; TODOS los siniestros y v&iacute;ctimas existentes
             </small>
         </div>
 
         <div class="btn-group">
             <button type="submit" class="btn btn-primary">
-                📤 Importar CSV
+                Importar Archivo
             </button>
             <a href="{% url 'admin:siniestros_siniestro_changelist' %}" class="btn btn-secondary">
-                ← Volver a la lista
+                Volver a la lista
             </a>
         </div>
     </form>
 </div>
+
+<script>
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
 {% endblock %}

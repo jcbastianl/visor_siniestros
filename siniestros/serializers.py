@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from .models import Causa, Siniestro, TipoSiniestro, Victima
 
 
@@ -23,14 +22,10 @@ class VictimaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Victima
         fields = [
-            'id',
-            'edad',
-            'condicion',
-            'condicion_label',
-            'sexo',
-            'sexo_label',
-            'actor_vial',
-            'actor_vial_label',
+            'id', 'edad',
+            'condicion', 'condicion_label',
+            'sexo', 'sexo_label',
+            'actor_vial', 'actor_vial_label',
         ]
 
 
@@ -43,80 +38,71 @@ class SiniestroSerializer(serializers.ModelSerializer):
     class Meta:
         model = Siniestro
         fields = [
-            'id',
-            'fecha_hora',
-            'latitud',
-            'longitud',
-            'via',
-            'grado_severidad',
-            'severidad_label',
-            'tipo_siniestro',
-            'causa_probable',
-            'victimas',
+            'id', 'fecha_hora', 'latitud', 'longitud', 'via',
+            'grado_severidad', 'severidad_label',
+            'tipo_siniestro', 'causa_probable', 'victimas',
+            'zona', 'barrio', 'parroquia', 'parroquia_rural',
+            'direccion_completa', 'calle_principal', 'calle_secundaria', 'referencia',
+            'condicion_calzada', 'condicion_atmosferica', 'condicion_via',
+            'luz_artificial', 'lugar_en_via', 'senalizacion_existente',
+            'num_vehiculos_involucrados', 'vehiculos_particular',
+            'vehiculos_publico', 'vehiculos_comercial', 'tipos_vehiculos', 'vehiculos_retenidos',
+            'num_heridos', 'num_fallecidos', 'num_pruebas_alcohotest', 'num_personas_detenidas',
+            'tiene_danos_bien_publico', 'descripcion_dano_bien_publico',
+            'datos_adicionales',
         ]
 
 
-# --- Serializers de Estadísticas ---
+# --- Serializers de estadísticas ---
 
 class KPIStatsSerializer(serializers.Serializer):
-    """Serializer para KPIs (total_siniestros, total_lesionados, total_fallecidos)."""
     total_siniestros = serializers.IntegerField()
     total_lesionados = serializers.IntegerField()
     total_fallecidos = serializers.IntegerField()
 
 
 class MonthlyStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas mensuales."""
     mes = serializers.IntegerField()
     total = serializers.IntegerField()
 
 
 class HourlyStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas por hora del día."""
     rango_hora = serializers.CharField()
     total = serializers.IntegerField()
 
 
 class DayHourStatSerializer(serializers.Serializer):
-    """Serializer para matriz día × hora."""
     dia_semana = serializers.IntegerField()
     hora_dia = serializers.IntegerField()
     total = serializers.IntegerField()
 
 
 class SeveridadStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas por severidad."""
     codigo = serializers.CharField()
     label = serializers.CharField()
     total = serializers.IntegerField()
 
 
 class SexoStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas por sexo."""
     sexo = serializers.CharField()
     label = serializers.CharField()
     total = serializers.IntegerField()
 
 
 class ActorVialStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas por actor vial."""
     actor_vial = serializers.CharField()
     label = serializers.CharField()
     total = serializers.IntegerField()
 
 
 class EdadSexoRangeSerializer(serializers.Serializer):
-    """Serializer para estadísticas por rango de edad y sexo."""
     rango_edad = serializers.CharField()
     sexo = serializers.CharField()
     sexo_label = serializers.CharField()
     total = serializers.IntegerField()
 
 
-# --- Nuevos Serializers para estadísticas expandidas ---
-
 class ViaStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas por vía."""
     via = serializers.CharField()
     total_siniestros = serializers.IntegerField()
     total_lesionados = serializers.IntegerField()
@@ -124,7 +110,6 @@ class ViaStatSerializer(serializers.Serializer):
 
 
 class CausaProbableStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas por causa probable."""
     id = serializers.IntegerField()
     causa = serializers.CharField()
     total_siniestros = serializers.IntegerField()
@@ -133,7 +118,6 @@ class CausaProbableStatSerializer(serializers.Serializer):
 
 
 class TipoSiniestroStatSerializer(serializers.Serializer):
-    """Serializer para estadísticas por tipo de siniestro."""
     id = serializers.IntegerField()
     tipo = serializers.CharField()
     total_siniestros = serializers.IntegerField()
@@ -142,7 +126,6 @@ class TipoSiniestroStatSerializer(serializers.Serializer):
 
 
 class EvolucionAnualSiniestrosSerializer(serializers.Serializer):
-    """Serializer para evolución anual de siniestros."""
     ano = serializers.IntegerField()
     total_siniestros = serializers.IntegerField()
     total_lesionados = serializers.IntegerField()
@@ -150,6 +133,5 @@ class EvolucionAnualSiniestrosSerializer(serializers.Serializer):
 
 
 class EvolucionAnualVictimasSerializer(serializers.Serializer):
-    """Serializer para evolución anual de víctimas."""
     ano = serializers.IntegerField()
     total = serializers.IntegerField()

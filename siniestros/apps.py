@@ -4,3 +4,4 @@ from django.apps import AppConfig
 class SiniestrosConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'siniestros'
+    verbose_name = 'Siniestros de Tránsito'

@@ -1,269 +1,154 @@
 """
-managers.py - QuerySets y Managers personalizados para lógica de agregación
+QuerySets y Managers personalizados para la lógica de agregación estadística.
 
-Centraliza toda la lógica de análisis estadístico para mantener models.py limpio.
+Centraliza toda la lógica de análisis para mantener models.py y views.py limpios.
+Cada método de agregación respeta el queryset filtrado que recibe de la vista.
 """
 
 from django.db import models
-from django.db.models import Count, Case, When, Value, CharField
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth, ExtractHour, ExtractWeekDay, TruncYear
-from datetime import datetime
 
 
 class SiniestroQuerySet(models.QuerySet):
     """QuerySet para Siniestro con métodos de agregación estadística."""
 
-    def _fill_monthly_totals(self, queryset):
-        """Helper para llenar 12 meses con datos o ceros."""
-        monthly_totals = {month: 0 for month in range(1, 13)}
+    def _fill_monthly(self, queryset):
+        """Rellena los 12 meses con datos o ceros para meses sin registros."""
+        monthly = {m: 0 for m in range(1, 13)}
         for item in queryset:
             if item['mes']:
-                monthly_totals[item['mes'].month] = item['total']
-        return [{'mes': m, 'total': monthly_totals[m]} for m in range(1, 13)]
+                monthly[item['mes'].month] = item['total']
+        return [{'mes': m, 'total': monthly[m]} for m in range(1, 13)]
 
-    def _fill_hourly_totals(self, queryset):
-        """Helper para llenar 24 horas con datos o ceros."""
-        hourly_totals = {hour: 0 for hour in range(24)}
+    def _fill_hourly(self, queryset):
+        """Rellena las 24 horas con datos o ceros para horas sin registros."""
+        hourly = {h: 0 for h in range(24)}
         for item in queryset:
             if item['hora'] is not None:
-                hourly_totals[item['hora']] = item['total']
-        return [
-            {'rango_hora': f'{h:02d}:00 - {h:02d}:59', 'total': hourly_totals[h]}
-            for h in range(24)
-        ]
+                hourly[item['hora']] = item['total']
+        return [{'rango_hora': f'{h:02d}:00 - {h:02d}:59', 'total': hourly[h]} for h in range(24)]
 
     def get_kpi_stats(self):
-        """KPIs: total siniestros, lesionados, fallecidos."""
-        from .models import Victima
-
+        """KPIs: total siniestros, lesionados y fallecidos."""
+        stats = self.aggregate(
+            total_lesionados=Sum('num_heridos'),
+            total_fallecidos=Sum('num_fallecidos')
+        )
         return {
             'total_siniestros': self.count(),
-            'total_lesionados': Victima.objects.filter(
-                condicion=Victima.Condicion.LESIONADO,
-                siniestro__in=self
-            ).count(),
-            'total_fallecidos': Victima.objects.filter(
-                condicion=Victima.Condicion.FALLECIDO,
-                siniestro__in=self
-            ).count(),
+            'total_lesionados': stats['total_lesionados'] or 0,
+            'total_fallecidos': stats['total_fallecidos'] or 0,
         }
 
     def get_por_mes(self):
-        """Agrupa por mes (respeta el queryset filtrado de la vista)."""
-        queryset = (
-            self
-            .annotate(mes=TruncMonth('fecha_hora'))
-            .values('mes')
-            .annotate(total=Count('id'))
-            .order_by('mes')
-        )
-        return self._fill_monthly_totals(queryset)
+        """Siniestros agrupados por mes (siempre devuelve 12 entradas)."""
+        qs = self.annotate(mes=TruncMonth('fecha_hora')).values('mes').annotate(total=Count('id')).order_by('mes')
+        return self._fill_monthly(qs)
 
     def get_por_severidad(self):
-        """Agrupa por severidad (ya filtrado por el queryset)."""
+        """Siniestros agrupados por grado de severidad."""
         from .models import Siniestro
-
         labels = dict(Siniestro.Severidad.choices)
-        queryset = (
-            self
-            .values('grado_severidad')
-            .annotate(total=Count('id'))
-            .order_by('-total')
-        )
-
+        qs = self.values('grado_severidad').annotate(total=Count('id')).order_by('-total')
         return [
-            {
-                'codigo': item['grado_severidad'],
-                'label': labels.get(item['grado_severidad'], 'No definido'),
-                'total': item['total'],
-            }
-            for item in queryset
+            {'codigo': item['grado_severidad'], 'label': labels.get(item['grado_severidad'], 'No definido'), 'total': item['total']}
+            for item in qs
         ]
 
     def get_por_hora(self):
-        """Agrupa por hora del día (respeta el queryset filtrado de la vista)."""
-        queryset = (
-            self
-            .annotate(hora=ExtractHour('fecha_hora'))
-            .values('hora')
-            .annotate(total=Count('id'))
-            .order_by('hora')
-        )
-        return self._fill_hourly_totals(queryset)
+        """Siniestros por hora del día (siempre devuelve 24 entradas)."""
+        qs = self.annotate(hora=ExtractHour('fecha_hora')).values('hora').annotate(total=Count('id')).order_by('hora')
+        return self._fill_hourly(qs)
 
     def get_por_dia_hora(self):
-        """Agrupa por día de semana (1-7) y hora (0-23) (respeta el queryset filtrado)."""
+        """Matriz 7 días x 24 horas de siniestros."""
         matrix = {day: {hour: 0 for hour in range(24)} for day in range(1, 8)}
-
         for item in (
-            self
-            .annotate(
-                dia_semana=ExtractWeekDay('fecha_hora'),
-                hora_dia=ExtractHour('fecha_hora'),
-            )
-            .values('dia_semana', 'hora_dia')
-            .annotate(total=Count('id'))
+            self.annotate(dia_semana=ExtractWeekDay('fecha_hora'), hora_dia=ExtractHour('fecha_hora'))
+            .values('dia_semana', 'hora_dia').annotate(total=Count('id'))
         ):
             day, hour = item['dia_semana'], item['hora_dia']
             if day in matrix and hour is not None:
                 matrix[day][hour] = item['total']
-
         return [
             {'dia_semana': day, 'hora_dia': hour, 'total': matrix[day][hour]}
-            for day in range(1, 8)
-            for hour in range(24)
+            for day in range(1, 8) for hour in range(24)
         ]
 
     def get_por_via(self):
-        """Agrupa por vía con conteo de siniestros, lesionados y fallecidos (ya filtrado)."""
-        from .models import Victima
-        
-        queryset = (
-            self
-            .values('via')
-            .annotate(total_siniestros=Count('id'))
-            .order_by('-total_siniestros')[:20]  # Top 20 vías
+        """Top 20 vías con más siniestros, incluyendo conteo de lesionados y fallecidos."""
+        qs = (
+            self.values('via')
+            .annotate(total_siniestros=Count('id'), total_lesionados=Sum('num_heridos'), total_fallecidos=Sum('num_fallecidos'))
+            .order_by('-total_siniestros')[:20]
         )
-        
-        result = []
-        for item in queryset:
-            via = item['via']
-            siniestros_en_via = self.filter(via=via)
-            lesionados = Victima.objects.filter(
-                condicion=Victima.Condicion.LESIONADO,
-                siniestro__in=siniestros_en_via
-            ).count()
-            fallecidos = Victima.objects.filter(
-                condicion=Victima.Condicion.FALLECIDO,
-                siniestro__in=siniestros_en_via
-            ).count()
-            
-            result.append({
-                'via': via or 'Sin especificar',
+        return [
+            {
+                'via': item['via'] or 'Sin especificar',
                 'total_siniestros': item['total_siniestros'],
-                'total_lesionados': lesionados,
-                'total_fallecidos': fallecidos,
-            })
-        
-        return result
+                'total_lesionados': item['total_lesionados'] or 0,
+                'total_fallecidos': item['total_fallecidos'] or 0,
+            }
+            for item in qs
+        ]
 
     def get_por_causa_probable(self):
-        """Agrupa por causa probable con totales (ya filtrado)."""
+        """Siniestros agrupados por causa probable con conteo de víctimas."""
         from .models import Victima
-        
-        queryset = (
-            self
-            .values('causa_probable__nombre', 'causa_probable__id')
-            .annotate(total_siniestros=Count('id'))
-            .order_by('-total_siniestros')
-        )
-        
+        qs = self.values('causa_probable__nombre', 'causa_probable__id').annotate(total_siniestros=Count('id')).order_by('-total_siniestros')
         result = []
-        for item in queryset:
-            causa_nombre = item['causa_probable__nombre'] or 'Sin especificar'
-            siniestros_causa = self.filter(
-                causa_probable__nombre=item['causa_probable__nombre']
-            )
-            lesionados = Victima.objects.filter(
-                condicion=Victima.Condicion.LESIONADO,
-                siniestro__in=siniestros_causa
-            ).count()
-            fallecidos = Victima.objects.filter(
-                condicion=Victima.Condicion.FALLECIDO,
-                siniestro__in=siniestros_causa
-            ).count()
-            
+        for item in qs:
+            siniestros_causa = self.filter(causa_probable__nombre=item['causa_probable__nombre'])
             result.append({
                 'id': item['causa_probable__id'],
-                'causa': causa_nombre,
+                'causa': item['causa_probable__nombre'] or 'Sin especificar',
                 'total_siniestros': item['total_siniestros'],
-                'total_lesionados': lesionados,
-                'total_fallecidos': fallecidos,
+                'total_lesionados': Victima.objects.filter(condicion=Victima.Condicion.LESIONADO, siniestro__in=siniestros_causa).count(),
+                'total_fallecidos': Victima.objects.filter(condicion=Victima.Condicion.FALLECIDO, siniestro__in=siniestros_causa).count(),
             })
-        
         return result
 
     def get_por_tipo_siniestro(self):
-        """Agrupa por tipo de siniestro con totales (ya filtrado)."""
+        """Siniestros agrupados por tipo con conteo de víctimas."""
         from .models import Victima
-        
-        queryset = (
-            self
-            .values('tipo_siniestro__nombre', 'tipo_siniestro__id')
-            .annotate(total_siniestros=Count('id'))
-            .order_by('-total_siniestros')
-        )
-        
+        qs = self.values('tipo_siniestro__nombre', 'tipo_siniestro__id').annotate(total_siniestros=Count('id')).order_by('-total_siniestros')
         result = []
-        for item in queryset:
-            tipo_nombre = item['tipo_siniestro__nombre'] or 'Sin especificar'
-            siniestros_tipo = self.filter(
-                tipo_siniestro__nombre=item['tipo_siniestro__nombre']
-            )
-            lesionados = Victima.objects.filter(
-                condicion=Victima.Condicion.LESIONADO,
-                siniestro__in=siniestros_tipo
-            ).count()
-            fallecidos = Victima.objects.filter(
-                condicion=Victima.Condicion.FALLECIDO,
-                siniestro__in=siniestros_tipo
-            ).count()
-            
+        for item in qs:
+            siniestros_tipo = self.filter(tipo_siniestro__nombre=item['tipo_siniestro__nombre'])
             result.append({
                 'id': item['tipo_siniestro__id'],
-                'tipo': tipo_nombre,
+                'tipo': item['tipo_siniestro__nombre'] or 'Sin especificar',
                 'total_siniestros': item['total_siniestros'],
-                'total_lesionados': lesionados,
-                'total_fallecidos': fallecidos,
+                'total_lesionados': Victima.objects.filter(condicion=Victima.Condicion.LESIONADO, siniestro__in=siniestros_tipo).count(),
+                'total_fallecidos': Victima.objects.filter(condicion=Victima.Condicion.FALLECIDO, siniestro__in=siniestros_tipo).count(),
             })
-        
         return result
 
     def get_evolucion_anual(self):
-        """Evolución anual de siniestros, lesionados y fallecidos."""
-        from .models import Victima
-        
-        years_data = (
-            self
-            .annotate(ano=TruncYear('fecha_hora'))
-            .values('ano')
-            .annotate(total_siniestros=Count('id'))
+        """Evolución anual: siniestros, lesionados y fallecidos por año."""
+        qs = (
+            self.annotate(ano=TruncYear('fecha_hora')).values('ano')
+            .annotate(total_siniestros=Count('id'), total_lesionados=Sum('num_heridos'), total_fallecidos=Sum('num_fallecidos'))
             .order_by('ano')
         )
-        
-        result = []
-        for item in years_data:
-            if not item['ano']:
-                continue
-            
-            year = item['ano'].year
-            siniestros_year = self.filter(fecha_hora__year=year)
-            lesionados = Victima.objects.filter(
-                condicion=Victima.Condicion.LESIONADO,
-                siniestro__in=siniestros_year
-            ).count()
-            fallecidos = Victima.objects.filter(
-                condicion=Victima.Condicion.FALLECIDO,
-                siniestro__in=siniestros_year
-            ).count()
-            
-            result.append({
-                'ano': year,
+        return [
+            {
+                'ano': item['ano'].year,
                 'total_siniestros': item['total_siniestros'],
-                'total_lesionados': lesionados,
-                'total_fallecidos': fallecidos,
-            })
-        
-        return result
+                'total_lesionados': item['total_lesionados'] or 0,
+                'total_fallecidos': item['total_fallecidos'] or 0,
+            }
+            for item in qs if item['ano']
+        ]
 
 
 class SiniestroManager(models.Manager):
-    """Manager para Siniestro."""
+    """Manager que expone el SiniestroQuerySet personalizado."""
 
     def get_queryset(self):
         return SiniestroQuerySet(self.model, using=self._db)
 
-    # Delegated methods for convenience
     def get_kpi_stats(self):
         return self.get_queryset().get_kpi_stats()
 
@@ -291,177 +176,106 @@ class SiniestroManager(models.Manager):
     def get_evolucion_anual(self):
         return self.get_queryset().get_evolucion_anual()
 
- 
+
 class VictimaQuerySet(models.QuerySet):
     """QuerySet para Victima con métodos de agregación estadística."""
 
-    def _fill_monthly_totals(self, queryset):
-        """Helper para llenar 12 meses."""
-        monthly_totals = {month: 0 for month in range(1, 13)}
+    def _fill_monthly(self, queryset):
+        """Rellena los 12 meses con datos o ceros."""
+        monthly = {m: 0 for m in range(1, 13)}
         for item in queryset:
             if item['mes']:
-                monthly_totals[item['mes'].month] = item['total']
-        return [{'mes': m, 'total': monthly_totals[m]} for m in range(1, 13)]
+                monthly[item['mes'].month] = item['total']
+        return [{'mes': m, 'total': monthly[m]} for m in range(1, 13)]
 
-    def _fill_hourly_totals(self, queryset):
-        """Helper para llenar 24 horas."""
-        hourly_totals = {hour: 0 for hour in range(24)}
+    def _fill_hourly(self, queryset):
+        """Rellena las 24 horas con datos o ceros."""
+        hourly = {h: 0 for h in range(24)}
         for item in queryset:
             if item['hora'] is not None:
-                hourly_totals[item['hora']] = item['total']
-        return [
-            {'rango_hora': f'{h:02d}:00 - {h:02d}:59', 'total': hourly_totals[h]}
-            for h in range(24)
-        ]
+                hourly[item['hora']] = item['total']
+        return [{'rango_hora': f'{h:02d}:00 - {h:02d}:59', 'total': hourly[h]} for h in range(24)]
 
     def get_por_sexo(self):
-        """Agrupa por sexo (ya filtrado por el queryset)."""
+        """Víctimas agrupadas por sexo."""
         from .models import Victima
-
         labels = dict(Victima.Sexo.choices)
-        queryset = (
-            self
-            .values('sexo')
-            .annotate(total=Count('id'))
-            .order_by('-total')
-        )
-
+        qs = self.values('sexo').annotate(total=Count('id')).order_by('-total')
         return [
-            {
-                'sexo': item['sexo'],
-                'label': labels.get(item['sexo'], 'No definido'),
-                'total': item['total'],
-            }
-            for item in queryset
-            if item['sexo'] is not None
+            {'sexo': item['sexo'], 'label': labels.get(item['sexo'], 'No definido'), 'total': item['total']}
+            for item in qs if item['sexo'] is not None
         ]
 
     def get_por_actor_vial(self):
-        """Agrupa por actor vial (ya filtrado por el queryset)."""
+        """Víctimas agrupadas por actor vial."""
         from .models import Victima
-
         labels = dict(Victima.ActorVial.choices)
-        queryset = (
-            self
-            .values('actor_vial')
-            .annotate(total=Count('id'))
-            .order_by('-total')
-        )
-
+        qs = self.values('actor_vial').annotate(total=Count('id')).order_by('-total')
         return [
-            {
-                'actor_vial': item['actor_vial'],
-                'label': labels.get(item['actor_vial'], 'No definido'),
-                'total': item['total'],
-            }
-            for item in queryset
-            if item['actor_vial'] is not None
+            {'actor_vial': item['actor_vial'], 'label': labels.get(item['actor_vial'], 'No definido'), 'total': item['total']}
+            for item in qs if item['actor_vial'] is not None
         ]
 
     def get_por_edad_sexo(self):
-        """Agrupa por rango de edad y sexo (ya filtrado por el queryset)."""
+        """Víctimas agrupadas por rango de edad (0-9, 10-19, ..., 70+) y sexo."""
         from .models import Victima
-
         ranges = [(0, 9), (10, 19), (20, 29), (30, 39), (40, 49), (50, 59), (60, 69), (70, 120)]
         sexo_labels = dict(Victima.Sexo.choices)
-
         result = []
         for start, end in ranges:
-            queryset = self.filter(edad__gte=start, edad__lte=end)
-            hombre = queryset.filter(sexo=Victima.Sexo.HOMBRE).count()
-            mujer = queryset.filter(sexo=Victima.Sexo.MUJER).count()
-            
-            # Formato: rango_edad, sexo, sexo_label, total (para cada sexo en el rango)
-            result.append({
-                'rango_edad': f'{start}-{end}',
-                'sexo': Victima.Sexo.HOMBRE,
-                'sexo_label': sexo_labels.get(Victima.Sexo.HOMBRE, 'No definido'),
-                'total': hombre,
-            })
-            result.append({
-                'rango_edad': f'{start}-{end}',
-                'sexo': Victima.Sexo.MUJER,
-                'sexo_label': sexo_labels.get(Victima.Sexo.MUJER, 'No definido'),
-                'total': mujer,
-            })
+            qs = self.filter(edad__gte=start, edad__lte=end)
+            for sexo_val in [Victima.Sexo.HOMBRE, Victima.Sexo.MUJER]:
+                result.append({
+                    'rango_edad': f'{start}-{end}',
+                    'sexo': sexo_val,
+                    'sexo_label': sexo_labels.get(sexo_val, 'No definido'),
+                    'total': qs.filter(sexo=sexo_val).count(),
+                })
         return result
 
     def get_por_mes(self):
-        """Agrupa por mes (respeta el queryset filtrado de la vista)."""
-        queryset = (
-            self
-            .annotate(mes=TruncMonth('siniestro__fecha_hora'))
-            .values('mes')
-            .annotate(total=Count('id'))
-            .order_by('mes')
+        """Víctimas agrupadas por mes (siempre devuelve 12 entradas)."""
+        qs = (
+            self.annotate(mes=TruncMonth('siniestro__fecha_hora'))
+            .values('mes').annotate(total=Count('id')).order_by('mes')
         )
-        return self._fill_monthly_totals(queryset)
+        return self._fill_monthly(qs)
 
     def get_por_hora(self):
-        """Agrupa por hora del día (respeta el queryset filtrado de la vista)."""
-        queryset = (
-            self
-            .annotate(hora=ExtractHour('siniestro__fecha_hora'))
-            .values('hora')
-            .annotate(total=Count('id'))
-            .order_by('hora')
+        """Víctimas por hora del día (siempre devuelve 24 entradas)."""
+        qs = (
+            self.annotate(hora=ExtractHour('siniestro__fecha_hora'))
+            .values('hora').annotate(total=Count('id')).order_by('hora')
         )
-        return self._fill_hourly_totals(queryset)
+        return self._fill_hourly(qs)
 
     def get_por_dia_hora(self):
-        """Agrupa por día de semana y hora (respeta el queryset filtrado de la vista)."""
+        """Matriz 7 días x 24 horas de víctimas."""
         matrix = {day: {hour: 0 for hour in range(24)} for day in range(1, 8)}
-
         for item in (
-            self
-            .annotate(
-                dia_semana=ExtractWeekDay('siniestro__fecha_hora'),
-                hora_dia=ExtractHour('siniestro__fecha_hora'),
-            )
-            .values('dia_semana', 'hora_dia')
-            .annotate(total=Count('id'))
+            self.annotate(dia_semana=ExtractWeekDay('siniestro__fecha_hora'), hora_dia=ExtractHour('siniestro__fecha_hora'))
+            .values('dia_semana', 'hora_dia').annotate(total=Count('id'))
         ):
             day, hour = item['dia_semana'], item['hora_dia']
             if day in matrix and hour is not None:
                 matrix[day][hour] = item['total']
-
         return [
             {'dia_semana': day, 'hora_dia': hour, 'total': matrix[day][hour]}
-            for day in range(1, 8)
-            for hour in range(24)
+            for day in range(1, 8) for hour in range(24)
         ]
 
     def get_evolucion_anual(self):
-        """Evolución anual de víctimas."""
-        years_data = (
-            self
-            .annotate(ano=TruncYear('siniestro__fecha_hora'))
-            .values('ano')
-            .annotate(total=Count('id'))
-            .order_by('ano')
-        )
-        
-        result = []
-        for item in years_data:
-            if not item['ano']:
-                continue
-            
-            year = item['ano'].year
-            result.append({
-                'ano': year,
-                'total': item['total'],
-            })
-        
-        return result
+        """Víctimas totales por año."""
+        qs = self.annotate(ano=TruncYear('siniestro__fecha_hora')).values('ano').annotate(total=Count('id')).order_by('ano')
+        return [{'ano': item['ano'].year, 'total': item['total']} for item in qs if item['ano']]
 
 
 class VictimaManager(models.Manager):
-    """Manager para Victima."""
+    """Manager que expone el VictimaQuerySet personalizado."""
 
     def get_queryset(self):
         return VictimaQuerySet(self.model, using=self._db)
 
-    # Delegated methods for convenience
     def get_por_sexo(self):
         return self.get_queryset().get_por_sexo()
 
