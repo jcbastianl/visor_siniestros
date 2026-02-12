@@ -10,3 +10,6 @@ python manage.py collectstatic --no-input
 
 # Apply migrations
 python manage.py migrate
+
+# Create superuser if env vars are present
+python create_superuser.py

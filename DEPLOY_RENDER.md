@@ -49,11 +49,17 @@ Render creará:
         - `DATABASE_URL`: Pegar la Internal DB URL copiada antes.
         - `SECRET_KEY`: Genera una clave segura aleatoria.
         - `PYTHON_VERSION`: `3.12.0`
-        - `DEBUG`: `False` (Opcional, por defecto será False).
+        - `DEBUG`: `False`.
+        - **CREAR SUPERUSUARIO**:
+            - `DJANGO_SUPERUSER_PASSWORD`: Escribe la contraseña que desees para el admin.
+            - `DJANGO_SUPERUSER_USERNAME`: (Opcional, defecto: admin).
+            - `DJANGO_SUPERUSER_EMAIL`: (Opcional, defecto: admin@example.com).
+            - *El sistema creará el usuario automáticamente en el próximo despliegue.*
 
 ## 3. Verificación
-Una vez desplegado, Render te dará una URL (ej. `https://visor-siniestros.onrender.com`).
-Al entrar, deberías ver la aplicación funcionando correctamente con los datos importados (si decides cargar datos en producción).
+Una vez desplegado (y configurada la variable `DJANGO_SUPERUSER_PASSWORD`):
+1.  Render te dará una URL (ej. `https://visor-siniestros.onrender.com`).
+2.  Entra a `/admin` y usa el usuario `admin` (o el que hayas puesto) y la contraseña que configuraste en la variable de entorno.
 
 ### Cargar datos en Producción
 Para cargar tus datos (Excel) en la base de datos de producción:
