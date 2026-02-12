@@ -2,8 +2,6 @@
 # exit on error
 set -o errexit
 
-cd visor_siniestros
-
 # Install dependencies
 pip install -r requirements.txt
 
