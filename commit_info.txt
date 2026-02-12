@@ -1,5 +1,0 @@
-commit c54443529e12aca66317958e5246b2486fd71830
-Author: joseph <joseph.balcazar@unl.edu.ec>
-Date:   Wed Feb 11 08:43:01 2026 -0500
-
-    chore: remove old venv from tracking, update requirements.txt and source files

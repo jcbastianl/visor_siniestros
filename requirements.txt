@@ -1,9 +1,0 @@
-Django == 5.2.7
-django-rest-framework == 0.1.0
-django-cors-headers == 4.9.0
-djangorestframework-gis == 0.18
-Pillow >= 10.1.0
-drf-spectacular
-django-filter
-pandas >= 2.0.0
-openpyxl >= 3.1.0
