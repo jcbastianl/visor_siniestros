@@ -158,11 +158,20 @@ def parse_severidad(resultado_str):
     resultado_upper = resultado_str.upper()
 
     # Mapeo de strings del CSV a choices del modelo
-    if any(word in resultado_upper for word in ['FALLECIDO', 'MUERTE', 'MUERTO']):
+    # Ampliado con más variaciones de texto
+    if any(word in resultado_upper for word in [
+        'FALLECIDO', 'FALLECIDA', 'MUERTE', 'MUERTO', 'MUERTA',
+        'FATAL', 'DECESO', 'ÓBITO', 'OBITO', 'SITIO'
+    ]):
         return Siniestro.Severidad.CON_FALLECIDOS
-    elif any(word in resultado_upper for word in ['HERIDO', 'LESIONADO', 'HERIDA']):
+    elif any(word in resultado_upper for word in [
+        'HERIDO', 'HERIDA', 'LESIONADO', 'LESIONADA', 'LESION', 'LESIÓN'
+    ]):
         return Siniestro.Severidad.CON_LESIONADOS
     else:
+        # Log para valores no reconocidos (ayuda a identificar nuevas variaciones)
+        if resultado_upper not in ['SOLO DAÑOS', 'SOLO DANOS', 'DAÑOS MATERIALES', 'DANOS MATERIALES', 'MATERIAL']:
+            logger.info(f"Severidad no reconocida en RESULTADOS CONSECUENCIAS: '{resultado_str}' - usando SOLO_DANOS como default")
         return Siniestro.Severidad.SOLO_DANOS
 
 
@@ -607,6 +616,18 @@ def import_from_excel(file_path, clear_existing=False, anio_filtro=None):
             danos_bien_publico = clean_value(row.get('DAÑOS OCASIONADOS AL BIEN PÚBLICO'))
             tiene_danos = danos_bien_publico == 'SI' if danos_bien_publico else False
             descripcion_dano = clean_value(row.get('DESCRIPCIÓN DAÑO AL BIEN PÚBLICO')) or ''
+
+            # VALIDACIÓN CRÍTICA: La severidad debe coincidir con los contadores de víctimas
+            # Esto corrige inconsistencias donde el texto no coincide con los números
+            if num_fallecidos > 0:
+                # Si hay fallecidos, SIEMPRE debe ser CON_FALLECIDOS
+                grado_severidad = Siniestro.Severidad.CON_FALLECIDOS
+            elif num_heridos > 0:
+                # Si hay heridos pero no fallecidos, debe ser CON_LESIONADOS
+                grado_severidad = Siniestro.Severidad.CON_LESIONADOS
+            else:
+                # Sin víctimas, debe ser SOLO_DANOS
+                grado_severidad = Siniestro.Severidad.SOLO_DANOS
 
             # Crear siniestro
             siniestro = Siniestro(
