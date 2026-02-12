@@ -2,6 +2,7 @@ services:
   - type: web
     name: visor-siniestros
     env: python
+    plan: free
     buildCommand: "./build.sh"
     startCommand: "gunicorn visor_backend.wsgi:application"
     envVars:
@@ -20,3 +21,4 @@ databases:
   - name: visor-db
     databaseName: visor_siniestros
     user: visor_user
+    plan: free

@@ -24,7 +24,8 @@ La opción "Blueprint" lee el archivo `render.yaml` y configura todo (Web Servic
 4.  Selecciona el repositorio `Siniestros_Backend`.
 5.  Dale un nombre al servicio (ej. `visor-siniestros-prod`).
 6.  Render detectará automáticamente el archivo `render.yaml`.
-7.  Haz clic en **Apply**.
+7.  **IMPORTANTE**: Asegúrate de que detecte los planes como **Free** (Gratis). He configurado el archivo para que lo intente por defecto, pero confírmalo visualmente para evitar cobros.
+8.  Haz clic en **Apply**.
 
 Render creará:
 - Una base de datos PostgreSQL (`visor-db`).
@@ -63,3 +64,7 @@ Para cargar tus datos (Excel) en la base de datos de producción:
 ## 4. Notas Importantes
 - **Archivos Estáticos**: `WhiteNoise` se encargará de ellos.
 - **Base de Datos**: Los datos de SQLite (local) **NO** se suben a Render. Empezarás con una base de datos vacía en PostgreSQL y deberás importar los datos nuevamente vía el Admin.
+- **Plan Gratuito**: 
+    - El servicio web se "duerme" tras 15 minutos de inactividad. La primera petición tardará unos 30-50 segundos en arrancar.
+    - La base de datos gratis expira a los 90 días (haz respaldos) y tiene límite de almacenamiento.
+    - ¡Es perfecto para demos y pruebas sin costo!
