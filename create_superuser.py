@@ -1,15 +1,34 @@
+"""
+Script para crear un superusuario de Django en despliegues automatizados.
+
+Lee las credenciales desde variables de entorno:
+    - ``DJANGO_SUPERUSER_USERNAME`` (default: ``admin``)
+    - ``DJANGO_SUPERUSER_EMAIL`` (default: ``admin@example.com``)
+    - ``DJANGO_SUPERUSER_PASSWORD`` (requerida, sin default)
+
+Uso:
+    Ejecutado automáticamente por ``build.sh`` durante el deploy en Render.
+    También puede ejecutarse manualmente: ``python create_superuser.py``
+"""
+
 import os
 import django
 from django.contrib.auth import get_user_model
 
-# Configurar entorno Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "visor_backend.settings")
 django.setup()
 
+
 def create_superuser():
+    """
+    Crea un superusuario si no existe ya uno con el mismo username.
+
+    Las credenciales se obtienen de variables de entorno. Si
+    ``DJANGO_SUPERUSER_PASSWORD`` no está definida, se omite la creación
+    con un aviso informativo (no es un error).
+    """
     User = get_user_model()
-    
-    # Obtener credenciales de variables de entorno (con defaults seguros)
+
     username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin')
     email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com')
     password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
@@ -28,6 +47,7 @@ def create_superuser():
             print(f"ERROR: Falló la creación del superusuario: {e}")
     else:
         print(f"El superusuario '{username}' ya existe. No es necesario crearlo.")
+
 
 if __name__ == "__main__":
     create_superuser()

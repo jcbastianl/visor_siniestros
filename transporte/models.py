@@ -1,3 +1,11 @@
+"""
+Modelos de datos para la app de transporte público y ciclovías.
+
+Incluye:
+    - ``LineaBus``: Líneas de autobús con geometría de ruta, paradas y tarifas.
+    - ``Ciclovia``: Segmentos de ciclovía con tipo de separación y longitud.
+"""
+
 from django.db import models
 
 
@@ -39,7 +47,13 @@ class LineaBus(models.Model):
 
 
 class Ciclovia(models.Model):
-    """Modelo para gestionar ciclovías con geometría de ruta."""
+    """
+    Segmento de ciclovía de la ciudad.
+
+    Almacena la geometría de la ruta (GeoJSON LineString), longitud en km
+    y tipo de separación respecto al tránsito vehicular.
+    """
+
     TIPO_SEPARACION_CHOICES = [
         ('Pintada', 'Ciclovía Pintada'),
         ('Confinada', 'Ciclovía Confinada'),

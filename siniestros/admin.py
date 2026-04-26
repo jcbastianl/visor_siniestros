@@ -1,3 +1,11 @@
+"""
+Configuración del panel de administración de Django para la app ``siniestros``.
+
+Registra los modelos Siniestro, Causa, TipoSiniestro y Victima con
+interfaces personalizadas, acciones de borrado lógico e importación
+integrada de datos desde archivos CSV/Excel.
+"""
+
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
@@ -7,6 +15,9 @@ from django.contrib import messages
 from .models import Siniestro, Victima, Causa, TipoSiniestro
 from .excel_import import import_from_excel
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Personalización del sitio admin
 admin.site.site_header = 'Visor de Siniestros - Administración'
@@ -16,6 +27,8 @@ admin.site.index_title = 'Panel de Administración'
 
 @admin.register(Causa)
 class CausaAdmin(admin.ModelAdmin):
+    """Administración del catálogo de causas probables con borrado lógico."""
+
     list_display = ('nombre', 'activo')
     list_filter = ('activo',)
     search_fields = ('nombre',)
@@ -23,15 +36,19 @@ class CausaAdmin(admin.ModelAdmin):
 
     @admin.action(description="Dar de baja las causas seleccionadas")
     def dar_de_baja(self, request, queryset):
+        """Desactiva las causas seleccionadas (borrado lógico)."""
         queryset.update(activo=False)
 
     @admin.action(description="Reactivar las causas seleccionadas")
     def reactivar(self, request, queryset):
+        """Reactiva las causas que habían sido dadas de baja."""
         queryset.update(activo=True)
 
 
 @admin.register(TipoSiniestro)
 class TipoSiniestroAdmin(admin.ModelAdmin):
+    """Administración del catálogo de tipos de siniestro con borrado lógico."""
+
     list_display = ('nombre', 'activo')
     list_filter = ('activo',)
     search_fields = ('nombre',)
@@ -39,15 +56,18 @@ class TipoSiniestroAdmin(admin.ModelAdmin):
 
     @admin.action(description="Dar de baja los tipos seleccionados")
     def dar_de_baja(self, request, queryset):
+        """Desactiva los tipos seleccionados (borrado lógico)."""
         queryset.update(activo=False)
 
     @admin.action(description="Reactivar los tipos seleccionados")
     def reactivar(self, request, queryset):
+        """Reactiva los tipos que habían sido dados de baja."""
         queryset.update(activo=True)
 
 
 class VictimaInline(admin.TabularInline):
     """Víctimas mostradas en línea dentro del detalle de un siniestro."""
+
     model = Victima
     extra = 0
     readonly_fields = ('condicion', 'sexo', 'actor_vial')
@@ -56,7 +76,15 @@ class VictimaInline(admin.TabularInline):
 
 @admin.register(Siniestro)
 class SiniestroAdmin(admin.ModelAdmin):
-    """Configuración del admin de Siniestros con importación de CSV/Excel integrada."""
+    """
+    Configuración del admin de Siniestros.
+
+    Incluye:
+    - Vista en línea de víctimas (``VictimaInline``)
+    - Importación de datos CSV/Excel a través de vista personalizada
+    - Fieldsets organizados por categoría
+    - Filtros, búsqueda y jerarquía por fecha
+    """
 
     inlines = [VictimaInline]
 
@@ -96,6 +124,7 @@ class SiniestroAdmin(admin.ModelAdmin):
     change_list_template = 'admin/siniestros/siniestro_changelist.html'
 
     def get_urls(self):
+        """Agrega la URL personalizada para la vista de importación CSV/Excel."""
         urls = super().get_urls()
         custom_urls = [
             path('import-csv/', self.admin_site.admin_view(self.import_csv_view), name='siniestros_siniestro_import_csv'),
@@ -103,7 +132,18 @@ class SiniestroAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def import_csv_view(self, request):
-        """Vista para importar archivos CSV o Excel desde el admin."""
+        """
+        Vista para importar archivos CSV o Excel desde el panel de administración.
+
+        Soporta archivos ``.csv``, ``.xlsx`` y ``.xls``. Guarda el archivo en un
+        temporal, invoca ``import_from_excel()`` y muestra los resultados al usuario.
+
+        Args:
+            request: HttpRequest de Django.
+
+        Returns:
+            HttpResponse con la plantilla de upload y resultados de la importación.
+        """
         context = {
             'title': 'Importar Siniestros desde CSV/Excel',
             'opts': self.model._meta,
@@ -166,8 +206,7 @@ class SiniestroAdmin(admin.ModelAdmin):
                         pass
 
             except Exception as e:
+                logger.exception("Error al procesar archivo de importación")
                 messages.error(request, f'Error al procesar el archivo: {str(e)}')
-                import traceback
-                traceback.print_exc()
 
         return render(request, 'admin/siniestros/csv_upload.html', context)

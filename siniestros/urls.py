@@ -1,3 +1,13 @@
+"""
+Configuración de URLs para la API REST de siniestros.
+
+Rutas registradas automáticamente por ``DefaultRouter``:
+    - ``/api/siniestros/``         — CRUD y estadísticas de siniestros
+    - ``/api/victimas/``           — CRUD y estadísticas de víctimas
+    - ``/api/causas/``             — Catálogo de causas probables
+    - ``/api/tipos-siniestro/``    — Catálogo de tipos de siniestro
+"""
+
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import SiniestroViewSet, VictimaViewSet, CausaViewSet, TipoSiniestroViewSet

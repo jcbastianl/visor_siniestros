@@ -163,75 +163,60 @@ def validate_actor_vial(value):
     return Victima.ActorVial.OTRO
 
 
-def parse_victimas_columns(row, max_victimas=20):
+def parse_victimas_columns(row, max_victimas=50):
     """
-    Parsea víctimas desde columnas simples en lugar de JSON.
-    Busca columnas victima1_*, victima2_*, etc.
-    
-    Returns: Lista de diccionarios con datos de víctimas
+    Parsea víctimas desde columnas con prefijo secuencial en un CSV.
+
+    Busca columnas ``victima1_condicion``, ``victima1_edad``, etc. de forma
+    consecutiva hasta que no encuentre datos para un índice.
+
+    Args:
+        row: Diccionario representando una fila del CSV (del ``DictReader``).
+        max_victimas: Límite de seguridad para evitar bucle infinito.
+
+    Returns:
+        list[dict]: Lista de diccionarios con claves ``condicion``, ``edad``,
+        ``sexo`` y ``actor_vial``.
     """
     victimas_data = []
     i = 1
-    
-    while True:
+
+    while i <= max_victimas:
         prefix = f'victima{i}_'
-        
-        # Verificar si existe alguna columna para este índice
-        # Buscamos claves que empiecen con el prefijo en la fila actual
-        # Pero como row es un diccionario, podemos chequear claves especificas
-        # Si no existe 'victimaX_condicion' ni 'victimaX_edad', asumimos que no hay mas
-        
+
+        # Verificar si alguna columna de este índice tiene valor
         has_data = False
         possible_fields = ['condicion', 'edad', 'sexo', 'actor_vial']
-        
-        # Verificar si alguna columna de este indice tiene valor
         for field in possible_fields:
             if row.get(f'{prefix}{field}', '').strip():
-                 has_data = True
-                 break
-        
-        if not has_data:
-            # Si llegamos a victimaX y no tiene datos, intentamos ver si quizas
-            # el usuario salto un numero (raro pero posible) o terminamos.
-            # Para seguridad, si no encontramos la 1, seguimos. Si encontramos la 1 pero no la 2, paramos.
-            if i > 50: # Limite de seguridad absurdo para evitar loop infinito
+                has_data = True
                 break
-            
-            # Simple check: si no hay condicion ni edad, asumimos fin, SALVO que haya gaps.
-            # Asumiremos que son consecutivos.
+
+        if not has_data:
             break
 
-        # Procesar
         condicion = row.get(f'{prefix}condicion', '').strip()
-        # Si hay datos pero no condicion default, podemos poner ILESO o skipear?
-        # Mejor procesamos lo que haya.
-        
-        if not condicion and not has_data:
-             i += 1
-             continue
 
         victima = {
-            'condicion': condicion if condicion else 'ILESO', # Default si olvidaron condicion
+            'condicion': condicion if condicion else 'ILESO',
             'edad': None,
             'sexo': '',
             'actor_vial': '',
         }
-        
-        # Parsear edad (puede estar vacía)
+
         edad_str = row.get(f'{prefix}edad', '').strip()
         if edad_str:
             try:
                 victima['edad'] = int(edad_str)
             except ValueError:
-                pass  # Dejar como None si no es un número válido
-        
-        # Parsear sexo y actor_vial
+                pass
+
         victima['sexo'] = row.get(f'{prefix}sexo', '').strip()
         victima['actor_vial'] = row.get(f'{prefix}actor_vial', '').strip()
-        
+
         victimas_data.append(victima)
         i += 1
-    
+
     return victimas_data
 
 
