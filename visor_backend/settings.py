@@ -224,3 +224,6 @@ REST_FRAMEWORK = {
 # el header Referer necesario para autorizar las peticiones.
 
 SECURE_REFERRER_POLICY = 'no-referrer-when-downgrade'
+
+# Configuración para que Django confíe en el SSL proxy de Azure
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
