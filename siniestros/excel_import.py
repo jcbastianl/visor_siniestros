@@ -1,7 +1,7 @@
 """
 Módulo para importar datos de siniestros desde archivos Excel o CSV.
 
-Este módulo proporciona funciones para leer archivos Excel/CSV con ~200 columnas,
+Este módulo proporciona funciones para leer archivos Excel/CSV ,
 parsear, validar y crear registros de Siniestro y Victima mapeando automáticamente
 los campos del CSV al modelo de base de datos.
 """

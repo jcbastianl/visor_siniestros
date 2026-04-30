@@ -170,6 +170,17 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5174',
 ]
 
+# Agregar orígenes desde variables de entorno para Producción (Azure)
+env_cors = os.environ.get('CORS_ALLOWED_ORIGINS')
+if env_cors:
+    CORS_ALLOWED_ORIGINS.extend(env_cors.split(','))
+
+# CSRF Trusted Origins (necesario para el admin de Django en Azure)
+CSRF_TRUSTED_ORIGINS = []
+env_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if env_csrf:
+    CSRF_TRUSTED_ORIGINS.extend(env_csrf.split(','))
+
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = [
