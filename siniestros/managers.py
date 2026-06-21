@@ -14,11 +14,16 @@ class SiniestroQuerySet(models.QuerySet):
     """QuerySet para Siniestro con métodos de agregación estadística."""
 
     def _fill_monthly(self, queryset):
-        """Rellena los 12 meses con datos o ceros para meses sin registros."""
+        """Rellena los 12 meses con datos o ceros para meses sin registros.
+
+        Acumula (``+=``) los totales del mismo mes calendario entre años: como
+        ``TruncMonth`` conserva el año, un mismo mes aparece en filas distintas por
+        año y deben sumarse, no sobrescribirse.
+        """
         monthly = {m: 0 for m in range(1, 13)}
         for item in queryset:
             if item['mes']:
-                monthly[item['mes'].month] = item['total']
+                monthly[item['mes'].month] += item['total']
         return [{'mes': m, 'total': monthly[m]} for m in range(1, 13)]
 
     def _fill_hourly(self, queryset):
@@ -185,7 +190,7 @@ class VictimaQuerySet(models.QuerySet):
         monthly = {m: 0 for m in range(1, 13)}
         for item in queryset:
             if item['mes']:
-                monthly[item['mes'].month] = item['total']
+                monthly[item['mes'].month] += item['total']
         return [{'mes': m, 'total': monthly[m]} for m in range(1, 13)]
 
     def _fill_hourly(self, queryset):
