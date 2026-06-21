@@ -40,3 +40,31 @@ def test_filtros_disponibles_estructura(api_client, siniestros):
     assert resp.status_code == 200
     assert {"causas", "tipos_siniestro", "dias_semana", "horas"} <= set(resp.data)
     assert any(c["nombre"] == "Exceso de velocidad" for c in resp.data["causas"])
+
+
+def _items(resp):
+    """Devuelve los items tanto si la respuesta está paginada como si es lista."""
+    data = resp.data
+    if isinstance(data, dict) and "results" in data:
+        return data["results"]
+    return data
+
+
+def test_filtro_victimas_por_sexo_mujer(api_client, siniestros):
+    """Regresión bug choices: filtrar por sexo=MUJER (valor real del modelo) debe
+    devolver la víctima MUJER. Con SEXO_CHOICES=M/F/O el filtro nunca coincidía."""
+    resp = api_client.get("/api/victimas/?sexo=MUJER")
+    assert resp.status_code == 200
+    items = _items(resp)
+    assert len(items) == 1
+    assert all(v["sexo"] == "MUJER" for v in items)
+
+
+def test_filtro_victimas_por_actor_vial_peaton(api_client, siniestros):
+    """Regresión bug choices: filtrar por actor_vial=PEATON (valor real del modelo)
+    debe devolver la víctima peatón. ACTOR_VIAL_CHOICES no incluía PEATON."""
+    resp = api_client.get("/api/victimas/?actor_vial=PEATON")
+    assert resp.status_code == 200
+    items = _items(resp)
+    assert len(items) == 1
+    assert all(v["actor_vial"] == "PEATON" for v in items)

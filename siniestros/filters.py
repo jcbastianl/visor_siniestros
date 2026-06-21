@@ -23,12 +23,12 @@ SEVERITY_CHOICES = [
     ('CON_FALLECIDOS', 'Con fallecidos en sitio'),
 ]
 
-SEXO_CHOICES = [('M', 'Masculino'), ('F', 'Femenino'), ('O', 'Otro')]
-CONDICION_CHOICES = [('LESIONADO', 'Lesionado'), ('FALLECIDO', 'Fallecido'), ('ILESO', 'Ileso')]
-ACTOR_VIAL_CHOICES = [
-    ('PEATÓN', 'Peatón'), ('CONDUCTOR', 'Conductor'), ('PASAJERO', 'Pasajero'),
-    ('CICLISTA', 'Ciclista'), ('MOTOCICLISTA', 'Motociclista'),
-]
+# Derivados de los TextChoices del modelo Victima para que los valores de filtrado
+# coincidan SIEMPRE con los realmente almacenados (evita desincronización: el bug previo
+# usaba M/F/O y PEATÓN/CONDUCTOR/... que no existen en el modelo).
+SEXO_CHOICES = Victima.Sexo.choices
+CONDICION_CHOICES = Victima.Condicion.choices
+ACTOR_VIAL_CHOICES = Victima.ActorVial.choices
 
 
 class SiniestroFilter(django_filters.FilterSet):
