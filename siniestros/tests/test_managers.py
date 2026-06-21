@@ -52,6 +52,27 @@ def test_por_mes_siempre_devuelve_12_entradas(siniestros_un_mes):
     assert sum(d["total"] for d in data) == 3  # el resto de meses se rellenan con 0
 
 
+def test_por_mes_acumula_mismo_mes_en_varios_anios(siniestros):
+    """Regresión bug _fill_monthly: marzo 2022 (1) + marzo 2023 (1) = 2, no 1.
+
+    Con ``TruncMonth`` se conserva el año, así que el mismo mes calendario aparece
+    en filas distintas por año. ``_fill_monthly`` debe SUMARLAS (no sobrescribir).
+    """
+    data = Siniestro.objects.get_por_mes()
+    marzo = next(d for d in data if d["mes"] == 3)
+    assert marzo["total"] == 2
+    assert sum(d["total"] for d in data) == 2
+
+
+def test_victimas_por_mes_acumula_mismo_mes_en_varios_anios(siniestros):
+    """Regresión bug _fill_monthly en VictimaQuerySet: 2 víctimas en marzo 2022 +
+    1 víctima en marzo 2023 = 3 en marzo (vía siniestro__fecha_hora), no 1."""
+    data = Victima.objects.get_por_mes()
+    marzo = next(d for d in data if d["mes"] == 3)
+    assert marzo["total"] == 3
+    assert sum(d["total"] for d in data) == 3
+
+
 def test_por_hora_siempre_devuelve_24_entradas(siniestros_un_mes):
     data = Siniestro.objects.get_por_hora()
     assert len(data) == 24
